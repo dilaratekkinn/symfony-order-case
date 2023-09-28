@@ -30,6 +30,8 @@ class Cart
      */
     private $cartItems;
 
+
+
     public function __construct()
     {
         $this->cartItems = new ArrayCollection();
@@ -81,4 +83,7 @@ class Cart
 
         return $this;
     }
+
+
+
 }

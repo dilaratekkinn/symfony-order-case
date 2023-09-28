@@ -32,16 +32,6 @@ class CartItem
      */
     private $quantity;
 
-    /**
-     * @ORM\Column(type="decimal", precision=10, scale=0)
-     */
-    private $total;
-
-    /**
-     * @ORM\Column(type="decimal", precision=10, scale=0)
-     */
-    private $unitPrice;
-
     public function getId(): ?int
     {
         return $this->id;
@@ -83,27 +73,5 @@ class CartItem
         return $this;
     }
 
-    public function getTotal(): ?string
-    {
-        return $this->total;
-    }
 
-    public function setTotal(string $total): self
-    {
-        $this->total = $total;
-
-        return $this;
-    }
-
-    public function getUnitPrice(): ?string
-    {
-        return $this->unitPrice;
-    }
-
-    public function setUnitPrice(string $unitPrice): self
-    {
-        $this->unitPrice = $unitPrice;
-
-        return $this;
-    }
 }

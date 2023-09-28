@@ -30,6 +30,7 @@ security:
     access_control:
         - { path: ^/api/login, roles: IS_AUTHENTICATED_ANONYMOUSLY }
         - { path: ^/api/cart, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/order, roles: IS_AUTHENTICATED_FULLY }
 
 
 when@test:
