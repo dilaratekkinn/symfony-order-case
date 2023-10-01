@@ -41,15 +41,6 @@ class CartController extends AbstractController
     }
 
 
-    public function index(): JsonResponse
-    {
-        return $this->json([
-            'message' => 'Welcome to your new controller!',
-            'path' => 'src/Controller/CartController.php',
-        ]);
-    }
-
-
     /**
      * @Route("/create", name="app_cart",methods={"POST"})
      */
@@ -73,15 +64,53 @@ class CartController extends AbstractController
     public function show(): JsonResponse
     {
         try {
-            $cart = $this->cartService->show($this->security->getUser());
+            list($cart, $total, $discount) = $this->cartService->show($this->security->getUser());
             return $this->successResponse->setData([
-                    json_decode($this->serializer->serialize($cart, 'json', SerializationContext::create()->setGroups(['cart']))),
+                    'cart' => json_decode($this->serializer->serialize($cart, 'json', SerializationContext::create()->setGroups(['cart']))),
+                    'total' => $total,
+                    'discount' => $discount
                 ]
-            )->setMessages([ 'Your Cart Showed Successfully'])->send();
+            )->setMessages(['Your Cart Showed Successfully'])->send();
         } catch (\Exception $e) {
             return $this->failResponse->setMessages([
                 'main' => $e->getMessage(),
             ])->send();
         }
     }
+
+    /**
+     * @Route("/delete/{id}", name="app_cartItem_delete", methods={"DELETE"})
+     */
+    public function removeCartItem($id): JsonResponse
+    {
+        try {
+            $this->cartService->remove($id);
+            return $this->successResponse->setMessages(['Item Removed Successfully'])->send();
+        } catch (\Exception $e) {
+            return $this->failResponse->setMessages([
+                'main' => $e->getMessage(),
+            ])->send();
+        }
+    }
+
+
+    /**
+     * @Route("/update/{id}", name="app_cartItem_update", methods={"POST"})
+     */
+
+    public function updateStock(Request $request, $id): JsonResponse
+    {
+        try {
+            return $this->successResponse->setData(
+                $this->cartService->update($request->toArray(), $id)
+            )->setMessages(['Item Stock Updated'])
+                ->send();
+        } catch (\Exception $e) {
+            return $this->failResponse->setMessages([
+                'main' => $e->getMessage(),
+            ])->send();
+        }
+    }
+
+
 }

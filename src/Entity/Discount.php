@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Repository\DiscountRepository;
 use Doctrine\ORM\Mapping as ORM;
+use JMS\Serializer\Annotation as JMS;
 
 /**
  * @ORM\Entity(repositoryClass=DiscountRepository::class)
@@ -19,11 +20,13 @@ class Discount
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @JMS\Groups({"order"})
      */
     private $discountReason;
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @JMS\Groups({"order"})
      */
     private $content;
 
@@ -41,6 +44,11 @@ class Discount
      * @ORM\Column(type="boolean")
      */
     private $status;
+
+    /**
+     * @ORM\Column(type="json")
+     */
+    private $settings = [];
 
 
     public function getId(): ?int
@@ -104,6 +112,18 @@ class Discount
     public function setStatus(bool $status): self
     {
         $this->status = $status;
+
+        return $this;
+    }
+
+    public function getSettings(): ?array
+    {
+        return $this->settings;
+    }
+
+    public function setSettings(array $settings): self
+    {
+        $this->settings = $settings;
 
         return $this;
     }

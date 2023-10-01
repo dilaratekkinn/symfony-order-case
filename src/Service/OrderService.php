@@ -2,12 +2,12 @@
 
 namespace App\Service;
 
-use App\Entity\CartItem;
 use App\Entity\Order;
 use App\Entity\OrderItem;
 use App\Repository\CartItemRepository;
 use App\Repository\CartRepository;
 use App\Repository\DiscountRepository;
+use App\Repository\OrderRepository;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Security\Core\Security;
@@ -21,6 +21,8 @@ class OrderService
     private $security;
     private $cartItemRepository;
     private $discountRepository;
+    private $orderRepository;
+    private $discountService;
 
 
     public function __construct(
@@ -29,7 +31,9 @@ class OrderService
         ProductRepository      $productRepository,
         Security               $security,
         CartItemRepository     $cartItemRepository,
-        DiscountRepository     $discountRepository
+        DiscountRepository     $discountRepository,
+        OrderRepository        $orderRepository,
+        DiscountService        $discountService
     )
     {
         $this->em = $em;
@@ -38,69 +42,90 @@ class OrderService
         $this->security = $security;
         $this->cartItemRepository = $cartItemRepository;
         $this->discountRepository = $discountRepository;
+        $this->orderRepository = $orderRepository;
+        $this->discountService = $discountService;
     }
 
-    public function add(array $parameters)
+
+    public function index(array $parameters)
+    {
+
+        $defaults = [
+            'pageNumber' => 1,
+            'rowsPerPage' => '',
+            'searchText' => '',
+            'orderBy' => 'id',
+            'order' => 'desc'
+        ];
+
+
+        $parameters = array_merge($defaults, $parameters);
+        $repo = $this->em->getRepository(Order::class);
+        $orders = $repo->createQueryBuilder('o');
+
+        $orders->setMaxResults($parameters['rowsPerPage'])->setFirstResult($parameters['pageNumber'] - 1)->orderBy('o.id', 'desc');
+        if (isset($parameters['user'])) {
+            $orders
+                ->join('o.user', 'u')
+                ->andWhere('u.id = :user')
+                ->setParameter('user', $this->security->getUser());
+        }
+
+        return $orders
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function add(): bool
     {
         $user = $this->security->getUser();
         $cart = $this->cartRepository->findOneBy(['user' => $user]);
-
         if (!$cart) {
             throw new \Exception('Sepetiniz Bulunmamaktadır,Order oluşturamazsınız');
         }
-        $discountCampaigns = $this->discountRepository->getActiveDiscounts();
 
-        foreach ($discountCampaigns as $discountCampaign) {
-            $class = '\\App\\DiscountClasses\\' . $discountCampaign->getClassName();
-            $class = new $class($cart->getCartItems(), $this->getTotal($cart));
-            $discount = $class->calculate();
+        $discounts = $this->discountService->showDiscount($cart->getCartItems(), CartService::getTotal($cart));
 
-            $availableDiscount = 0;
-            $availableDiscountCampaign = null;
-
-            if ($discount <= 0) {
-                continue;
-            }
-            $availableDiscount = $discount;
-            break;
-        }
-
-        $order = new Order();
-        $order->setUser($cart->getUser());
-        $order->setDiscountPrice($availableDiscount);
-        $order->setDiscount($availableDiscountCampaign);
-        $order->setTotal($this->getTotal($cart));
-        $this->em->persist($order);
-        $this->em->flush();
 
         if ($cart->getCartItems() !== null) {
 
+            $order = new Order();
+            $order->setUser($cart->getUser());
+            $order->setDiscountPrice($discounts['discount'] ?? 0);
+            $order->setDiscount($discounts['discountCampaign'] ?? null);
+            $order->setStatus('wait');
+            $order->setTotal(CartService::getTotal($cart));
+            $this->em->persist($order);
+
             foreach ($cart->getCartItems() as $cartItem) {
-                $product = $this->productRepository->findOneBy(['id' => $cartItem->getProduct()->getId()]);
+                if ($cartItem->getQuantity() > $cartItem->getProduct()->getStock()) {
+                    throw new \Exception('İçeride bu kadar stock bulunmamakta');
+                }
                 $orderItem = new OrderItem();
                 $orderItem->setBelongsToOrder($order);
                 $orderItem->setProduct($cartItem->getProduct());
                 $orderItem->setQuantity($cartItem->getQuantity());
-
                 $this->em->persist($orderItem);
                 $this->em->flush();
-
-                $product->setStock($product->getStock() - $cartItem->getQuantity());
-                $this->em->persist($product);
-                $this->em->flush();
+                $cartItem->getProduct()->setStock($cartItem->getProduct()->getStock() - $cartItem->getQuantity());
+                $this->em->persist($cartItem->getProduct());
             }
-            return $order;
+            $this->em->flush();
         }
+        $this->em->remove($cart);
+        $this->em->flush();
+        return true;
     }
 
-
-    private function getTotal($cart)
+    public function show($id)
     {
-        $return = 0;
-        foreach ($cart->getCartItems() as $item) {
-            $return += $item->getProduct()->getPrice() * $item->getQuantity();
-        }
+        $order = $this->orderRepository->findOneBy(
+            ['user' => $this->security->getUser(),
+                'id' => $id]);
 
-        return $return;
+        if (!$order) {
+            throw new \Exception('No order ID');
+        }
+        return $order;
     }
 }

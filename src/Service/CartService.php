@@ -18,7 +18,7 @@ class CartService
     private $productRepository;
     private $security;
     private $cartItemRepository;
-    private $discountRepository;
+    private $discountService;
 
 
     public function __construct(
@@ -27,7 +27,7 @@ class CartService
         ProductRepository      $productRepository,
         Security               $security,
         CartItemRepository     $cartItemRepository,
-        DiscountRepository     $discountRepository
+        DiscountService   $discountService
     )
     {
         $this->em = $em;
@@ -35,30 +35,21 @@ class CartService
         $this->productRepository = $productRepository;
         $this->security = $security;
         $this->cartItemRepository = $cartItemRepository;
-        $this->discountRepository = $discountRepository;
+        $this->discountService =$discountService;
     }
 
     /**
      * @throws \Exception
      */
+
+
     public function add(array $parameters)
     {
         $user = $this->security->getUser();
 
-        $product = $this->productRepository->findOneBy(['id' => $parameters['item']]);
-        if (!$product) {
-            throw new \Exception('bu ürün yok');
-        }
-        if ($product->getStock() < $parameters['quantity']) {
-            throw new \Exception('bu ürünün stoğu yok');
-        }
-        $cart = $this->cartRepository->findOneBy(['user' => $user]);
-        if (!$cart) {
-            $cart = new Cart();
-            $cart->setUser($user);
-            $this->em->persist($cart);
-            $this->em->flush();
-        }
+        $product = $this->checkProductWithQuantity($parameters['item'], $parameters['quantity']);
+        $cart = $this->getCart($user);
+
         $checkCartItem = $this->cartItemRepository->findOneBy(['cart' => $cart, 'product' => $product]);
         if (!$checkCartItem) {
             $checkCartItem = new CartItem();
@@ -73,32 +64,86 @@ class CartService
         return $checkCartItem;
     }
 
-    public function show($user)
+    private function checkProductWithQuantity($id, $quantity)
     {
-        $cart = $this->cartRepository->findOneBy(['user' => $user]);
-        $discountCampaigns = $this->discountRepository->getActiveDiscounts();
-        foreach ($discountCampaigns as $discountCampaign) {
-            $class = '\\App\\DiscountClasses\\' . $discountCampaign->getClassName();
-            $class = new $class($cart->getCartItems(), $this->getTotal($cart));
+        $product = $this->productRepository->findOneBy(['id' => $id]);
 
-            $discount = $class->calculate();
-            $availableDiscount = 0;
-            if ($discount <= 0){
-                continue;
-            }
-
-            $availableDiscount = [
-                'discountCampaign' => $discountCampaign->getContent(),
-                'discountKey'=>$discountCampaign->getDiscountReason(),
-                'discount' => 'Kazancınız '.$discount . 'TL '
-            ];
-            break;
+        // symfony Entity anotaion olarak eklenebilir
+        if (!$product) {
+            throw new \Exception('bu ürün yok');
         }
-        return [$cart, $availableDiscount];
-
+        if ($product->getStock() < $quantity) {
+            throw new \Exception('bu ürünün stoğu yok');
+        }
+        return $product;
     }
 
-    private function getTotal($cart)
+
+    private function getCart($user)
+    {
+        $cart = $this->cartRepository->findOneBy(['user' => $user]);
+        if (!$cart) {
+            $cart = new Cart();
+            $cart->setUser($user);
+            $this->em->persist($cart);
+            $this->em->flush();
+        }
+        return $cart;
+    }
+
+    public function show($user): array
+    {
+        $cart = $this->getCart($user);
+        $total=$this->getTotal($cart);
+        $discounts=$this->discountService->showDiscount($cart->getCartItems(),$total);
+        if($discounts !== null){
+            $discounts = [
+                'discount_reason' => $discounts['discountCampaign']->getDiscountReason(),
+                'discount_campaign' => $discounts['discountCampaign']->getContent(),
+                'discount' => $discounts['discount']
+            ];
+        }
+        return [$cart,$total, $discounts];
+    }
+
+    public function remove($id): bool
+    {
+        $cartItem = $this->checkCartItem($id);
+        $this->em->remove($cartItem);
+        $this->em->flush();
+        return true;
+    }
+
+    public function update(array $parameters, $id)
+    {
+        $cartItem = $this->checkCartItem($id);
+        if (!$cartItem) {
+            throw new \Exception('Cart Item yok ki');
+        }
+        if ($parameters['quantity'] > $cartItem->getProduct()->getStock()) {
+            throw new \Exception('İçeride bu kadar stock bulunmamakta');
+        }
+
+
+        $cartItem->setQuantity($parameters['quantity']);
+        $this->em->persist($cartItem);
+        $this->em->flush();
+        return $cartItem;
+    }
+
+    private function checkCartItem($id)
+    {
+        $user = $this->security->getUser();
+        $cartItem = $this->cartItemRepository->findOneBy([
+            'cart' => $user->getCart(),
+            'product' => $this->productRepository->find($id)
+        ]);
+
+        return $cartItem;
+    }
+
+
+    public static function getTotal($cart)
     {
         $return = 0;
         foreach ($cart->getCartItems() as $item) {
@@ -107,4 +152,6 @@ class CartService
 
         return $return;
     }
+
+
 }

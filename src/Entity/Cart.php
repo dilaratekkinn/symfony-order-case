@@ -6,6 +6,9 @@ use App\Repository\CartRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use JMS\Serializer\Annotation as JMS;
+
+
 
 /**
  * @ORM\Entity(repositoryClass=CartRepository::class)
@@ -16,20 +19,21 @@ class Cart
      * @ORM\Id
      * @ORM\GeneratedValue
      * @ORM\Column(type="integer")
+     * @JMS\Groups({"cart"})
      */
     private $id;
 
     /**
-     * @ORM\OneToOne(targetEntity=User::class, inversedBy="cart", cascade={"persist", "remove"})
+     * @ORM\OneToOne(targetEntity=User::class, inversedBy="cart")
      * @ORM\JoinColumn(nullable=false)
      */
     private $user;
 
     /**
-     * @ORM\OneToMany(targetEntity=CartItem::class, mappedBy="cart")
+     * @ORM\OneToMany(targetEntity=CartItem::class, mappedBy="cart", cascade={"remove"})
+     * @JMS\Groups({"cart"})
      */
     private $cartItems;
-
 
 
     public function __construct()

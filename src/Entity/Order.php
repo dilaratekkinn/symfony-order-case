@@ -6,6 +6,8 @@ use App\Repository\OrderRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use JMS\Serializer\Annotation as JMS;
+
 
 /**
  * @ORM\Entity(repositoryClass=OrderRepository::class)
@@ -17,6 +19,7 @@ class Order
      * @ORM\Id
      * @ORM\GeneratedValue
      * @ORM\Column(type="integer")
+     * @JMS\Groups({"order"})
      */
     private $id;
 
@@ -27,23 +30,32 @@ class Order
 
     /**
      * @ORM\OneToMany(targetEntity=OrderItem::class, mappedBy="belongsToOrder")
+     * @JMS\Groups({"order"})
      */
     private $orderItem;
 
     /**
      * @ORM\OneToOne(targetEntity=Discount::class, cascade={"persist", "remove"})
+     * @JMS\Groups({"order"})
      */
     private $discount;
 
     /**
      * @ORM\Column(type="decimal", precision=10, scale=0)
+     * @JMS\Groups({"order"})
      */
     private $total;
 
     /**
      * @ORM\Column(type="decimal", precision=10, scale=0)
+     * @JMS\Groups({"order"})
      */
     private $discount_price;
+
+    /**
+     * @ORM\Column(type="string", length=255)
+     */
+    private $status;
 
     public function __construct()
     {
@@ -129,6 +141,18 @@ class Order
     public function setDiscountPrice(string $discount_price): self
     {
         $this->discount_price = $discount_price;
+
+        return $this;
+    }
+
+    public function getStatus(): ?string
+    {
+        return $this->status;
+    }
+
+    public function setStatus(string $status): self
+    {
+        $this->status = $status;
 
         return $this;
     }

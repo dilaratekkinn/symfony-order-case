@@ -4,7 +4,7 @@ namespace App\Entity;
 
 use App\Repository\OrderItemRepository;
 use Doctrine\ORM\Mapping as ORM;
-
+use JMS\Serializer\Annotation as JMS;
 /**
  * @ORM\Entity(repositoryClass=OrderItemRepository::class)
  */
@@ -19,16 +19,18 @@ class OrderItem
 
     /**
      * @ORM\ManyToOne(targetEntity=Product::class, inversedBy="orderItems")
+     * @JMS\Groups({"order"})
      */
     private $product;
 
     /**
      * @ORM\Column(type="integer")
+     * @JMS\Groups({"order"})
      */
     private $quantity;
 
     /**
-     * @ORM\ManyToOne(targetEntity=Order::class, inversedBy="orderItem")
+     * @ORM\ManyToOne(targetEntity=Order::class, inversedBy="orderItem",cascade={"remove"})
      */
     private $belongsToOrder;
 

@@ -2,11 +2,48 @@
 
 namespace App\Service;
 
+use App\Repository\DiscountRepository;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Security\Core\Security;
+
 class DiscountService
 {
 
-    public static function calculate ($products,$currentTotal)
-    {
+    private $em;
 
+    private $security;
+    private $discountRepository;
+
+
+    public function __construct(
+        EntityManagerInterface $em,
+        Security               $security,
+        DiscountRepository     $discountRepository
+
+    )
+    {
+        $this->em = $em;
+        $this->discountRepository = $discountRepository;
+        $this->security = $security;
+
+    }
+
+    public function showDiscount($products, $currentTotal): ?array
+    {
+        $discountCampaigns = $this->discountRepository->getActiveDiscounts();
+        foreach ($discountCampaigns as $discountCampaign) {
+            $class = '\\App\\DiscountClasses\\' . $discountCampaign->getClassName();
+            $class = new $class($discountCampaign->getSettings(), $products, $currentTotal);
+            $discount = $class->calculate();
+            if ($discount <= 0) {
+                continue;
+            }
+
+            return [
+                'discountCampaign' => $discountCampaign,
+                'discount' => $discount
+            ];
+        }
+        return null;
     }
 }

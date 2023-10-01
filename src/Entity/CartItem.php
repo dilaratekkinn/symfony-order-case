@@ -4,6 +4,8 @@ namespace App\Entity;
 
 use App\Repository\CartItemRepository;
 use Doctrine\ORM\Mapping as ORM;
+use JMS\Serializer\Annotation as JMS;
+
 
 /**
  * @ORM\Entity(repositoryClass=CartItemRepository::class)
@@ -19,6 +21,7 @@ class CartItem
 
     /**
      * @ORM\ManyToOne(targetEntity=Product::class, inversedBy="cartItems")
+     * @JMS\Groups({"cart"})
      */
     private $product;
 
@@ -29,6 +32,7 @@ class CartItem
 
     /**
      * @ORM\Column(type="integer")
+     * @JMS\Groups({"cart"})
      */
     private $quantity;
 
