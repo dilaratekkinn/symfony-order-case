@@ -4,11 +4,8 @@ namespace App\Service;
 
 use App\Entity\Order;
 use App\Entity\OrderItem;
-use App\Repository\CartItemRepository;
 use App\Repository\CartRepository;
-use App\Repository\DiscountRepository;
 use App\Repository\OrderRepository;
-use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Security\Core\Security;
 
@@ -17,10 +14,7 @@ class OrderService
 
     private $em;
     private $cartRepository;
-    private $productRepository;
     private $security;
-    private $cartItemRepository;
-    private $discountRepository;
     private $orderRepository;
     private $discountService;
 
@@ -28,20 +22,14 @@ class OrderService
     public function __construct(
         EntityManagerInterface $em,
         CartRepository         $cartRepository,
-        ProductRepository      $productRepository,
         Security               $security,
-        CartItemRepository     $cartItemRepository,
-        DiscountRepository     $discountRepository,
         OrderRepository        $orderRepository,
         DiscountService        $discountService
     )
     {
         $this->em = $em;
         $this->cartRepository = $cartRepository;
-        $this->productRepository = $productRepository;
         $this->security = $security;
-        $this->cartItemRepository = $cartItemRepository;
-        $this->discountRepository = $discountRepository;
         $this->orderRepository = $orderRepository;
         $this->discountService = $discountService;
     }

@@ -8,24 +8,10 @@ use Symfony\Component\Security\Core\Security;
 
 class DiscountService
 {
-
-    private $em;
-
-    private $security;
     private $discountRepository;
-
-
-    public function __construct(
-        EntityManagerInterface $em,
-        Security               $security,
-        DiscountRepository     $discountRepository
-
-    )
+    public function __construct(DiscountRepository $discountRepository)
     {
-        $this->em = $em;
         $this->discountRepository = $discountRepository;
-        $this->security = $security;
-
     }
 
     public function showDiscount($products, $currentTotal): ?array

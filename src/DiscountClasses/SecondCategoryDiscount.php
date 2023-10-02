@@ -10,6 +10,8 @@ class SecondCategoryDiscount implements DiscountInterface
     private $currentTotal;
     private $settings;
 
+
+    //Setting bölümünün admin tarafından istenilen biçimi bu schema ayarlarına göre yapılır
     public static $settingSchema = [
         'category_id'=>[
             'name'=>'indirim uygulanacak kategoriyi seçiniz',

@@ -44,11 +44,11 @@ class CartController extends AbstractController
     /**
      * @Route("/create", name="app_cart",methods={"POST"})
      */
-    public function create(Request $request): JsonResponse
+    public function createCart(Request $request): JsonResponse
     {
         try {
             return $this->successResponse->setData(
-                $this->cartService->add($request->toArray())
+                $this->cartService->addCartItemToCart($request->toArray())
             )->setMessages(['Cart Created Successfully'])
                 ->send();
         } catch (\Exception $e) {
@@ -61,10 +61,10 @@ class CartController extends AbstractController
     /**
      * @Route("/", name="app_cart_show",methods={"GET"})
      */
-    public function show(): JsonResponse
+    public function showCart(): JsonResponse
     {
         try {
-            list($cart, $total, $discount) = $this->cartService->show($this->security->getUser());
+            list($cart, $total, $discount) = $this->cartService->showCart($this->security->getUser());
             return $this->successResponse->setData([
                     'cart' => json_decode($this->serializer->serialize($cart, 'json', SerializationContext::create()->setGroups(['cart']))),
                     'total' => $total,
@@ -79,13 +79,27 @@ class CartController extends AbstractController
     }
 
     /**
-     * @Route("/delete/{id}", name="app_cartItem_delete", methods={"DELETE"})
+     * @Route("/remove_item/{id}", name="app_cartItem_delete", methods={"DELETE"})
      */
     public function removeCartItem($id): JsonResponse
     {
         try {
-            $this->cartService->remove($id);
+            $this->cartService->removeItem($id);
             return $this->successResponse->setMessages(['Item Removed Successfully'])->send();
+        } catch (\Exception $e) {
+            return $this->failResponse->setMessages([
+                'main' => $e->getMessage(),
+            ])->send();
+        }
+    }
+    /**
+     * @Route("/delete/{id}", name="app_cart_delete", methods={"DELETE"})
+     */
+    public function removeCart($id): JsonResponse
+    {
+        try {
+            $this->cartService->removeCart($id);
+            return $this->successResponse->setMessages(['removeCart Removed Successfully'])->send();
         } catch (\Exception $e) {
             return $this->failResponse->setMessages([
                 'main' => $e->getMessage(),
@@ -98,11 +112,11 @@ class CartController extends AbstractController
      * @Route("/update/{id}", name="app_cartItem_update", methods={"POST"})
      */
 
-    public function updateStock(Request $request, $id): JsonResponse
+    public function updateCartItem(Request $request, $id): JsonResponse
     {
         try {
             return $this->successResponse->setData(
-                $this->cartService->update($request->toArray(), $id)
+                $this->cartService->updateCartItemQuantity($request->toArray(), $id)
             )->setMessages(['Item Stock Updated'])
                 ->send();
         } catch (\Exception $e) {
