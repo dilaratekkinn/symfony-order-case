@@ -64,11 +64,12 @@ class CartController extends AbstractController
     public function showCart(): JsonResponse
     {
         try {
-            list($cart, $total, $discount) = $this->cartService->showCart($this->security->getUser());
+            list($cart, $total, $discount,$changed) = $this->cartService->showCart($this->security->getUser());
             return $this->successResponse->setData([
                     'cart' => json_decode($this->serializer->serialize($cart, 'json', SerializationContext::create()->setGroups(['cart']))),
                     'total' => $total,
-                    'discount' => $discount
+                    'discount' => $discount,
+                    'changed'=>$changed
                 ]
             )->setMessages(['Your Cart Showed Successfully'])->send();
         } catch (\Exception $e) {

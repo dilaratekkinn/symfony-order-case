@@ -7,6 +7,8 @@ use App\Entity\CartItem;
 use App\Repository\CartItemRepository;
 use App\Repository\CartRepository;
 use App\Repository\DiscountRepository;
+use App\Repository\OrderItemRepository;
+use App\Repository\OrderRepository;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Security\Core\Security;
@@ -19,6 +21,7 @@ class CartService
     private $security;
     private $cartItemRepository;
     private $discountService;
+    private $orderItemRepository;
 
 
     public function __construct(
@@ -27,11 +30,13 @@ class CartService
         ProductRepository      $productRepository,
         Security               $security,
         CartItemRepository     $cartItemRepository,
-        DiscountService        $discountService
+        DiscountService        $discountService,
+        OrderItemRepository    $orderItemRepository
     )
     {
         $this->em = $em;
         $this->cartRepository = $cartRepository;
+        $this->orderItemRepository = $orderItemRepository;
         $this->productRepository = $productRepository;
         $this->security = $security;
         $this->cartItemRepository = $cartItemRepository;
@@ -43,7 +48,7 @@ class CartService
     {
         $cart = $this->getCart($this->security->getUser());
         $product = $this->checkProductWithQuantity($parameters['item'], $parameters['quantity']);
-        $getCartItem =$this->getCartItemByProductId($product);
+        $getCartItem = $this->getCartItemByProductId($product);
         if (!$getCartItem) {
             $getCartItem = new CartItem();
             $getCartItem->setCart($cart);
@@ -62,6 +67,19 @@ class CartService
     {
         $cart = $this->getCart($user);
         $total = $this->getTotal($cart);
+        $changed = false;
+
+        foreach($cart->getCartItems() as $cartItem){
+            if($cartItem->getProduct()->getStock() < $cartItem->getQuantity()){
+                $cartItem->setQuantity($cartItem->getProduct()->getStock());
+                $changed = true;
+            }
+        }
+        if($changed){
+            $this->em->persist($cart);
+            $this->em->flush();
+        }
+
         $discounts = $this->discountService->showDiscount($cart->getCartItems(), $total);
         if ($discounts !== null) {
             $discounts = [
@@ -70,10 +88,11 @@ class CartService
                 'discount' => $discounts['discount']
             ];
         }
-        return [$cart, $total, $discounts];
+        return [$cart,$total,$discounts,$changed];
     }
 
-    public function removeItem($id): bool
+    public
+    function removeItem($id): bool
     {
         $cartItem = $this->getCartItemByProductId($id);
         $this->em->remove($cartItem);
@@ -81,7 +100,8 @@ class CartService
         return true;
     }
 
-    public function updateCartItemQuantity(array $parameters, $id)
+    public
+    function updateCartItemQuantity(array $parameters, $id)
     {
         $cartItem = $this->checkCartItemWithQuantity($id, $parameters['quantity']);
         $cartItem->setQuantity($parameters['quantity']);
@@ -90,10 +110,11 @@ class CartService
         return $cartItem;
     }
 
-    public function removeCart($user): bool
+    public
+    function removeCart($user): bool
     {
         $cart = $this->cartRepository->findOneBy(['user' => $user]);
-        if(!$cart){
+        if (!$cart) {
             throw new \Exception('Userın böyle bi sepeti yok');
 
         }
@@ -103,7 +124,8 @@ class CartService
 
     }
 
-    private function getCartItemByProductId($id)
+    private
+    function getCartItemByProductId($id)
     {
         return $this->cartItemRepository->findOneBy([
             'cart' => $this->security->getUser()->getCart(),
@@ -111,7 +133,8 @@ class CartService
         ]);
     }
 
-    private function checkCartItemWithQuantity($id, $quantity)
+    private
+    function checkCartItemWithQuantity($id, $quantity)
     {
         $cartItem = $this->getCartItemByProductId($id);
         if (!$cartItem) {
@@ -123,7 +146,8 @@ class CartService
         return $cartItem;
     }
 
-    private function checkProductWithQuantity($id, $quantity)
+    private
+    function checkProductWithQuantity($id, $quantity)
     {
         $product = $this->productRepository->findOneBy(['id' => $id]);
 
@@ -136,7 +160,8 @@ class CartService
         return $product;
     }
 
-    private function getCart($user)
+    private
+    function getCart($user)
     {
         $cart = $this->cartRepository->findOneBy(['user' => $user]);
         if (!$cart) {
@@ -148,7 +173,8 @@ class CartService
         return $cart;
     }
 
-    public static function getTotal($cart)
+    public
+    static function getTotal($cart)
     {
         $return = 0;
         foreach ($cart->getCartItems() as $item) {
