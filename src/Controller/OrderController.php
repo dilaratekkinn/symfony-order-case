@@ -81,9 +81,10 @@ class OrderController extends AbstractController
     public function show($id): JsonResponse
     {
         try {
-            $order = $this->orderService->show($id);
+           list($order,$amount) = $this->orderService->show($id);
             return $this->successResponse->setData([
                     json_decode($this->serializer->serialize($order, 'json', SerializationContext::create()->setGroups(['order']))),
+                    'amount'=>$amount
                 ]
             )->setMessages(['Order Showed Successfully'])->send();
         } catch (\Exception $e) {

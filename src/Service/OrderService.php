@@ -107,13 +107,13 @@ class OrderService
 
     public function show($id)
     {
-        $order = $this->orderRepository->findOneBy(
-            ['user' => $this->security->getUser(),
-                'id' => $id]);
-
+        $order = $this->orderRepository->findOneBy(['user' => $this->security->getUser(), 'id' => $id]);
         if (!$order) {
             throw new \Exception('No order ID');
         }
-        return $order;
+        $amount=$order->getTotal() - $order->getDiscountPrice();
+
+        return [$order,$amount];
     }
+
 }
