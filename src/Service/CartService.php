@@ -3,79 +3,75 @@
 namespace App\Service;
 
 use App\Entity\Cart;
-use App\Entity\CartItem;
-use App\Repository\CartItemRepository;
 use App\Repository\CartRepository;
-use App\Repository\DiscountRepository;
-use App\Repository\OrderItemRepository;
-use App\Repository\OrderRepository;
-use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\Security\Core\Exception\UserNotFoundException;
 use Symfony\Component\Security\Core\Security;
 
 class CartService
 {
     private $em;
     private $cartRepository;
-    private $productRepository;
     private $security;
-    private $cartItemRepository;
     private $discountService;
-    private $orderItemRepository;
+    private $cartItemService;
 
 
     public function __construct(
+
         EntityManagerInterface $em,
         CartRepository         $cartRepository,
-        ProductRepository      $productRepository,
         Security               $security,
-        CartItemRepository     $cartItemRepository,
         DiscountService        $discountService,
-        OrderItemRepository    $orderItemRepository
+        CartItemService        $cartItemService
+
     )
     {
         $this->em = $em;
         $this->cartRepository = $cartRepository;
-        $this->orderItemRepository = $orderItemRepository;
-        $this->productRepository = $productRepository;
         $this->security = $security;
-        $this->cartItemRepository = $cartItemRepository;
         $this->discountService = $discountService;
+        $this->cartItemService = $cartItemService;
     }
 
-
-    public function addCartItemToCart(array $parameters)
+    public function createCart(array $parameters)
     {
-        $cart = $this->getCart($this->security->getUser());
-        $product = $this->checkProductWithQuantity($parameters['item'], $parameters['quantity']);
-        $getCartItem = $this->getCartItemByProductId($product);
-        if (!$getCartItem) {
-            $getCartItem = new CartItem();
-            $getCartItem->setCart($cart);
-            $getCartItem->setQuantity(0);
-            $getCartItem->setProduct($product);
+        $cart = $this->getCartByFilter($this->security->getUser());
+        $this->cartItemService->addCartItemToCart($parameters['item'], $parameters['quantity']);
+        return $cart;
+
+    }
+
+    public function removeCart($user): bool
+    {
+        $cart = $this->cartRepository->findOneBy(['user' => $user]);
+        if (!$cart) {
+            throw new UserNotFoundException('User does not have a cart with this id');
         }
-
-        $getCartItem->setQuantity($getCartItem->getQuantity() + $parameters['quantity']);
-        $this->em->persist($getCartItem);
+        $this->em->remove($cart);
         $this->em->flush();
+        return true;
 
-        return $getCartItem;
     }
 
     public function showCart($user): array
     {
-        $cart = $this->getCart($user);
+        $cart = $this->getCartByFilter(['user' => $user]);
+        if ($cart->getCartItems()->isEmpty()) {
+            throw new NotFoundHttpException('Your Cart Is Empty,Shop Now!');
+        }
+
         $total = $this->getTotal($cart);
         $changed = false;
 
-        foreach($cart->getCartItems() as $cartItem){
-            if($cartItem->getProduct()->getStock() < $cartItem->getQuantity()){
+        foreach ($cart->getCartItems() as $cartItem) {
+            if ($cartItem->getProduct()->getStock() < $cartItem->getQuantity()) {
                 $cartItem->setQuantity($cartItem->getProduct()->getStock());
                 $changed = true;
             }
         }
-        if($changed){
+        if ($changed) {
             $this->em->persist($cart);
             $this->em->flush();
         }
@@ -88,93 +84,23 @@ class CartService
                 'discount' => $discounts['discount']
             ];
         }
-        return [$cart,$total,$discounts,$changed];
+        return [$cart, $total, $discounts, $changed];
     }
 
-    public
-    function removeItem($id): bool
-    {
-        $cartItem = $this->getCartItemByProductId($id);
-        $this->em->remove($cartItem);
-        $this->em->flush();
-        return true;
-    }
-
-    public
-    function updateCartItemQuantity(array $parameters, $id)
-    {
-        $cartItem = $this->checkCartItemWithQuantity($id, $parameters['quantity']);
-        $cartItem->setQuantity($parameters['quantity']);
-        $this->em->persist($cartItem);
-        $this->em->flush();
-        return $cartItem;
-    }
-
-    public
-    function removeCart($user): bool
-    {
-        $cart = $this->cartRepository->findOneBy(['user' => $user]);
-        if (!$cart) {
-            throw new \Exception('Userın böyle bi sepeti yok');
-
-        }
-        $this->em->remove($cart);
-        $this->em->flush();
-        return true;
-
-    }
-
-    private
-    function getCartItemByProductId($id)
-    {
-        return $this->cartItemRepository->findOneBy([
-            'cart' => $this->security->getUser()->getCart(),
-            'product' => $this->productRepository->find($id)
-        ]);
-    }
-
-    private
-    function checkCartItemWithQuantity($id, $quantity)
-    {
-        $cartItem = $this->getCartItemByProductId($id);
-        if (!$cartItem) {
-            throw new \Exception('Cart Item yok ki');
-        }
-        if ($quantity > $cartItem->getProduct()->getStock()) {
-            throw new \Exception('İçeride bu kadar stock bulunmamakta');
-        }
-        return $cartItem;
-    }
-
-    private
-    function checkProductWithQuantity($id, $quantity)
-    {
-        $product = $this->productRepository->findOneBy(['id' => $id]);
-
-        if (!$product) {
-            throw new \Exception('bu ürün yok');
-        }
-        if ($product->getStock() < $quantity) {
-            throw new \Exception('bu ürünün stoğu yok');
-        }
-        return $product;
-    }
-
-    private
-    function getCart($user)
+    private function getCartByFilter($user)
     {
         $cart = $this->cartRepository->findOneBy(['user' => $user]);
         if (!$cart) {
             $cart = new Cart();
-            $cart->setUser($user);
+            $cart->setUser($this->security->getUser());
             $this->em->persist($cart);
             $this->em->flush();
         }
         return $cart;
+
     }
 
-    public
-    static function getTotal($cart)
+    public static function getTotal($cart)
     {
         $return = 0;
         foreach ($cart->getCartItems() as $item) {
@@ -183,6 +109,5 @@ class CartService
 
         return $return;
     }
-
 
 }

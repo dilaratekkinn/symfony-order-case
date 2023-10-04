@@ -2,8 +2,7 @@
 
 namespace App\Controller;
 
-use App\ApiResponse\FailResponse;
-use App\ApiResponse\SuccessResponse;
+use App\Helper\ApiResponse;
 use App\Service\CartService;
 use JMS\Serializer\SerializationContext;
 use JMS\Serializer\SerializerInterface;
@@ -19,113 +18,56 @@ use Symfony\Component\Security\Core\Security;
 class CartController extends AbstractController
 {
     private $cartService;
-    private $successResponse;
-    private $failResponse;
     private $serializer;
     private $security;
 
 
     public function __construct(
         CartService         $cartService,
-        FailResponse        $failResponse,
-        SuccessResponse     $successResponse,
         SerializerInterface $serializer,
         Security            $security
     )
     {
         $this->cartService = $cartService;
-        $this->successResponse = $successResponse;
-        $this->failResponse = $failResponse;
         $this->serializer = $serializer;
         $this->security = $security;
     }
 
-
     /**
      * @Route("/create", name="app_cart",methods={"POST"})
      */
-    public function createCart(Request $request): JsonResponse
+
+    public function create(Request $request): JsonResponse
     {
-        try {
-            return $this->successResponse->setData(
-                $this->cartService->addCartItemToCart($request->toArray())
-            )->setMessages(['Cart Created Successfully'])
-                ->send();
-        } catch (\Exception $e) {
-            return $this->failResponse->setMessages([
-                'main' => $e->getMessage(),
-            ])->send();
-        }
+        $card = $this->cartService->createCart($request->toArray());
+        return ApiResponse::message(true, 'Card Created', $card);
     }
 
     /**
      * @Route("/", name="app_cart_show",methods={"GET"})
      */
-    public function showCart(): JsonResponse
+    public function show(): JsonResponse
     {
-        try {
-            list($cart, $total, $discount,$changed) = $this->cartService->showCart($this->security->getUser());
-            return $this->successResponse->setData([
-                    'cart' => json_decode($this->serializer->serialize($cart, 'json', SerializationContext::create()->setGroups(['cart']))),
-                    'total' => $total,
-                    'discount' => $discount,
-                    'changed'=>$changed
-                ]
-            )->setMessages(['Your Cart Showed Successfully'])->send();
-        } catch (\Exception $e) {
-            return $this->failResponse->setMessages([
-                'main' => $e->getMessage(),
-            ])->send();
-        }
+        list($cart, $total, $discount, $changed) = $this->cartService->showCart($this->security->getUser());
+        return ApiResponse::data([
+            'cart' => json_decode($this->serializer->serialize($cart, 'json', SerializationContext::create()->setGroups(['cart']))),
+            'total' => $total,
+            'discount' => $discount,
+            'changed' => $changed
+        ]);
+
     }
 
-    /**
-     * @Route("/remove_item/{id}", name="app_cartItem_delete", methods={"DELETE"})
-     */
-    public function removeCartItem($id): JsonResponse
-    {
-        try {
-            $this->cartService->removeItem($id);
-            return $this->successResponse->setMessages(['Item Removed Successfully'])->send();
-        } catch (\Exception $e) {
-            return $this->failResponse->setMessages([
-                'main' => $e->getMessage(),
-            ])->send();
-        }
-    }
     /**
      * @Route("/delete/{id}", name="app_cart_delete", methods={"DELETE"})
      */
-    public function removeCart($id): JsonResponse
+    public function delete($id): JsonResponse
     {
-        try {
-            $this->cartService->removeCart($id);
-            return $this->successResponse->setMessages(['removeCart Removed Successfully'])->send();
-        } catch (\Exception $e) {
-            return $this->failResponse->setMessages([
-                'main' => $e->getMessage(),
-            ])->send();
-        }
+        $this->cartService->removeCart($id);
+        return ApiResponse::message(true, 'CArt Deleted with Cart\'s Id ' . $id);
+
     }
 
-
-    /**
-     * @Route("/update/{id}", name="app_cartItem_update", methods={"POST"})
-     */
-
-    public function updateCartItem(Request $request, $id): JsonResponse
-    {
-        try {
-            return $this->successResponse->setData(
-                $this->cartService->updateCartItemQuantity($request->toArray(), $id)
-            )->setMessages(['Item Stock Updated'])
-                ->send();
-        } catch (\Exception $e) {
-            return $this->failResponse->setMessages([
-                'main' => $e->getMessage(),
-            ])->send();
-        }
-    }
 
 
 }

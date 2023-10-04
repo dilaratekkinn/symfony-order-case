@@ -2,16 +2,14 @@
 
 namespace App\Controller;
 
-use App\ApiResponse\FailResponse;
-use App\ApiResponse\SuccessResponse;
+use App\Helper\ApiResponse;
 use App\Service\OrderService;
 use JMS\Serializer\SerializationContext;
 use JMS\Serializer\SerializerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Security\Core\Security;
+use Symfony\Component\Routing\Annotation\Route;
 
 /**
  * @Route("api/order", name="order_")
@@ -19,24 +17,15 @@ use Symfony\Component\Security\Core\Security;
 class OrderController extends AbstractController
 {
     private $orderService;
-    private $successResponse;
-    private $failResponse;
     private $serializer;
-    private $security;
 
     public function __construct(
         OrderService        $orderService,
-        FailResponse        $failResponse,
-        SuccessResponse     $successResponse,
-        SerializerInterface $serializer,
-        Security            $security
+        SerializerInterface $serializer
     )
     {
         $this->orderService = $orderService;
-        $this->successResponse = $successResponse;
-        $this->failResponse = $failResponse;
         $this->serializer = $serializer;
-        $this->security = $security;
     }
 
     /**
@@ -44,35 +33,19 @@ class OrderController extends AbstractController
      */
     public function index(Request $request): JsonResponse
     {
-        try {
-            $orders = $this->orderService->index($request->toArray());
-            return $this->successResponse->setData([
-                    json_decode($this->serializer->serialize($orders, 'json', SerializationContext::create()->setGroups('order'))),
-                ]
-            )->setMessages(['Orders Listed Successfully'])->send();
-        } catch (\Exception $e) {
-            return $this->failResponse->setMessages([
-                'main' => $e->getMessage(),
-            ])->send();
-        }
+        $orders = $this->orderService->index($request->toArray());
+        return ApiResponse::data([json_decode($this->serializer->serialize($orders, 'json', SerializationContext::create()->setGroups(['order'])))]);
     }
 
 
     /**
      * @Route("/create", name="app_order_create",methods={"POST"})
      */
+
     public function create(): JsonResponse
     {
-        try {
-            return $this->successResponse->setData(
-                $this->orderService->add()
-            )->setMessages(['Order Created Successfully'])
-                ->send();
-        } catch (\Exception $e) {
-            return $this->failResponse->setMessages([
-                'main' => $e->getMessage(),
-            ])->send();
-        }
+        $order = $this->orderService->createOrder();
+        return ApiResponse::message(true, 'Order Created', $order);
     }
 
     /**
@@ -80,19 +53,13 @@ class OrderController extends AbstractController
      */
     public function show($id): JsonResponse
     {
-        try {
-           list($order,$amount) = $this->orderService->show($id);
-            return $this->successResponse->setData([
-                    json_decode($this->serializer->serialize($order, 'json', SerializationContext::create()->setGroups(['order']))),
-                    'amount'=>$amount
-                ]
-            )->setMessages(['Order Showed Successfully'])->send();
-        } catch (\Exception $e) {
-            return $this->failResponse->setMessages([
-                'main' => $e->getMessage(),
-            ])->send();
-        }
-    }
+        list($order, $amount) = $this->orderService->showOrder($id);
+        return ApiResponse::data([
+            'order' => json_decode($this->serializer->serialize($order, 'json', SerializationContext::create()->setGroups(['order']))),
+            'amount' => $amount,
 
+        ]);
+
+    }
 
 }

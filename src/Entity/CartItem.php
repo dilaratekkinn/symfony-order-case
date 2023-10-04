@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\CartItemRepository;
 use Doctrine\ORM\Mapping as ORM;
 use JMS\Serializer\Annotation as JMS;
+use Symfony\Component\Validator\Constraints as Assert;
 
 
 /**
@@ -22,6 +23,7 @@ class CartItem
     /**
      * @ORM\ManyToOne(targetEntity=Product::class, inversedBy="cartItems")
      * @JMS\Groups({"cart"})
+     * @Assert\NotBlank
      */
     private $product;
 
@@ -33,6 +35,7 @@ class CartItem
     /**
      * @ORM\Column(type="integer")
      * @JMS\Groups({"cart"})
+     * @Assert\NotBlank
      */
     private $quantity;
 

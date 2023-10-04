@@ -4,31 +4,27 @@ namespace App\Service;
 
 use App\Entity\Order;
 use App\Entity\OrderItem;
-use App\Repository\CartRepository;
 use App\Repository\OrderRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Security\Core\Security;
 
 class OrderService
 {
 
     private $em;
-    private $cartRepository;
     private $security;
     private $orderRepository;
     private $discountService;
 
-
     public function __construct(
         EntityManagerInterface $em,
-        CartRepository         $cartRepository,
         Security               $security,
         OrderRepository        $orderRepository,
         DiscountService        $discountService
     )
     {
         $this->em = $em;
-        $this->cartRepository = $cartRepository;
         $this->security = $security;
         $this->orderRepository = $orderRepository;
         $this->discountService = $discountService;
@@ -37,7 +33,6 @@ class OrderService
 
     public function index(array $parameters)
     {
-
         $defaults = [
             'pageNumber' => 1,
             'rowsPerPage' => '',
@@ -45,8 +40,6 @@ class OrderService
             'orderBy' => 'id',
             'order' => 'desc'
         ];
-
-
         $parameters = array_merge($defaults, $parameters);
         $repo = $this->em->getRepository(Order::class);
         $orders = $repo->createQueryBuilder('o');
@@ -58,22 +51,19 @@ class OrderService
                 ->andWhere('u.id = :user')
                 ->setParameter('user', $this->security->getUser());
         }
-
         return $orders
             ->getQuery()
             ->getResult();
     }
 
-    public function add(): bool
+    public function createOrder(): bool
     {
-        $user = $this->security->getUser();
-        $cart = $this->cartRepository->findOneBy(['user' => $user]);
+        $cart = $this->security->getUser()->getCart();
         if (!$cart) {
-            throw new \Exception('Sepetiniz Bulunmamaktadır,Order oluşturamazsınız');
+            throw new NotFoundHttpException('You Do Not Have A Cart,Cant Create Order!');
         }
 
         $discounts = $this->discountService->showDiscount($cart->getCartItems(), CartService::getTotal($cart));
-
 
         if ($cart->getCartItems() !== null) {
 
@@ -87,7 +77,7 @@ class OrderService
 
             foreach ($cart->getCartItems() as $cartItem) {
                 if ($cartItem->getQuantity() > $cartItem->getProduct()->getStock()) {
-                    throw new \Exception('İçeride bu kadar stock bulunmamakta');
+                    throw new NotFoundHttpException('There Is Not Enough Stock For This Product As You Wish!');
                 }
                 $orderItem = new OrderItem();
                 $orderItem->setBelongsToOrder($order);
@@ -105,15 +95,16 @@ class OrderService
         return true;
     }
 
-    public function show($id)
+
+    public function showOrder($id)
     {
         $order = $this->orderRepository->findOneBy(['user' => $this->security->getUser(), 'id' => $id]);
         if (!$order) {
-            throw new \Exception('No order ID');
+            throw new NotFoundHttpException('There Is No Order With Thi ID!');
         }
-        $amount=$order->getTotal() - $order->getDiscountPrice();
+        $amount = $order->getTotal() - $order->getDiscountPrice();
 
-        return [$order,$amount];
+        return [$order, $amount];
     }
 
 }
