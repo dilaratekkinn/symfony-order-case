@@ -39,8 +39,6 @@ class SecondCategoryDiscount implements DiscountInterface
         $this->products = $products;
         $this->currentTotal = $currentTotal;
         $this->settings = $settings;
-
-        return $this;
     }
 
     public function calculate()

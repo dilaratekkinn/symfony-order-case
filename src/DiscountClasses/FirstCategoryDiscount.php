@@ -11,37 +11,33 @@ class FirstCategoryDiscount implements DiscountInterface
     private $currentTotal;
     private $settings;
     public static $settingSchema = [
-        'category_id'=>[
-            'name'=>'indirim uygulanacak kategoriyi seçiniz',
-            'type'=>'number',//category'e özel ayarlanabilir
-            'required'=>true
+        'category_id' => [
+            'name' => 'indirim uygulanacak kategoriyi seçiniz',
+            'type' => 'number',//category'e özel ayarlanabilir
+            'required' => true
         ],
-        'discount'=>[
-            'name'=>'indirim oranı',
-            'type'=>'number',
-            'min'=>1,
-            'default'=>20,
-            'max'=>100,
-            'required'=>true
+        'discount' => [
+            'name' => 'indirim oranı',
+            'type' => 'number',
+            'min' => 1,
+            'default' => 20,
+            'max' => 100,
+            'required' => true
         ],
 
     ];
 
-    public function __construct(array $settings,$products, $currentTotal)
+    public function __construct(array $settings, $products, $currentTotal)
     {
         $this->products = $products;
         $this->currentTotal = $currentTotal;
         $this->settings = $settings;
-
-        return $this;
     }
 
     public function calculate()
     {
         $count = 0;
         $found = 0;
-
-        $dis = [];
 
         foreach ($this->products as $item) {
             foreach ($item->getProduct()->getCategory() as $category) {
