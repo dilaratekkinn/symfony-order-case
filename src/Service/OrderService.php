@@ -16,17 +16,20 @@ class OrderService
     private $security;
     private $orderRepository;
     private $discountService;
+    private $orderItemService;
 
     public function __construct(
         EntityManagerInterface $em,
         Security               $security,
         OrderRepository        $orderRepository,
+        OrderItemService       $orderItemService,
         DiscountService        $discountService
     )
     {
         $this->em = $em;
         $this->security = $security;
         $this->orderRepository = $orderRepository;
+        $this->orderItemService = $orderItemService;
         $this->discountService = $discountService;
     }
 
@@ -76,17 +79,7 @@ class OrderService
             $this->em->persist($order);
 
             foreach ($cart->getCartItems() as $cartItem) {
-                if ($cartItem->getQuantity() > $cartItem->getProduct()->getStock()) {
-                    throw new NotFoundHttpException('There Is Not Enough Stock For This Product As You Wish!');
-                }
-                $orderItem = new OrderItem();
-                $orderItem->setBelongsToOrder($order);
-                $orderItem->setProduct($cartItem->getProduct());
-                $orderItem->setQuantity($cartItem->getQuantity());
-                $this->em->persist($orderItem);
-                $this->em->flush();
-                $cartItem->getProduct()->setStock($cartItem->getProduct()->getStock() - $cartItem->getQuantity());
-                $this->em->persist($cartItem->getProduct());
+                $this->orderItemService->addOrderItemToOrder($cartItem, $order);
             }
             $this->em->flush();
         }
@@ -96,7 +89,7 @@ class OrderService
     }
 
 
-    public function showOrder($id)
+    public function showOrder($id): array
     {
         $order = $this->orderRepository->findOneBy(['user' => $this->security->getUser(), 'id' => $id]);
         if (!$order) {

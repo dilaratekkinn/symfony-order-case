@@ -16,26 +16,22 @@ class CartItemService
     private $productRepository;
     private $security;
     private $cartItemRepository;
-    private $cartRepository;
 
     public function __construct(
         EntityManagerInterface $em,
         ProductRepository      $productRepository,
         Security               $security,
-        CartItemRepository     $cartItemRepository,
-        CartRepository     $cartRepository
+        CartItemRepository     $cartItemRepository
     )
     {
         $this->em = $em;
         $this->productRepository = $productRepository;
         $this->security = $security;
         $this->cartItemRepository = $cartItemRepository;
-        $this->cartRepository = $cartRepository;
     }
 
-    public function addCartItemToCart($product, $quantity)
+    public function addCartItemToCart($cart,$product, $quantity)
     {
-        $cart = $this->cartRepository->findOneBy(['user'=>$this->security->getUser()]);
         $product = $this->checkProductStock($product, $quantity);
         $cartItem = $this->getCartItemByProductId($product);
         if (!$cartItem) {

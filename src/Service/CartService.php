@@ -37,8 +37,8 @@ class CartService
 
     public function createCart(array $parameters)
     {
-        $cart = $this->getCartByFilter($this->security->getUser());
-        $this->cartItemService->addCartItemToCart($parameters['item'], $parameters['quantity']);
+        $cart = $this->getCartByFilter(['user' => $this->security->getUser()]);
+        $this->cartItemService->addCartItemToCart($cart,$parameters['item'], $parameters['quantity']);
         return $cart;
 
     }
@@ -87,9 +87,9 @@ class CartService
         return [$cart, $total, $discounts, $changed];
     }
 
-    private function getCartByFilter($user)
+    private function getCartByFilter($query)
     {
-        $cart = $this->cartRepository->findOneBy(['user' => $user]);
+        $cart = $this->cartRepository->findOneBy($query);
         if (!$cart) {
             $cart = new Cart();
             $cart->setUser($this->security->getUser());

@@ -3,11 +3,9 @@
 namespace App\EventListener;
 
 use App\ExceptionResponse\ExceptionResponse;
-use Exception;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class ExceptionListener
@@ -33,16 +31,15 @@ class ExceptionListener
 
     private function createResponse($exception): ExceptionResponse
     {
-        $response = new ExceptionResponse();
-        $response->setContent($exception->getMessage());
+        //exceptiondan alınan statusCode response'a yönlenir
 
         if ($exception instanceof HttpExceptionInterface) {
-            $response->setStatusCode($exception->getStatusCode());
-            $response->headers->replace($exception->getHeaders());
+            $statusCode = $exception->getStatusCode();
         } else {
-            $response->setStatusCode(Response::HTTP_INTERNAL_SERVER_ERROR);
+            $statusCode = Response::HTTP_INTERNAL_SERVER_ERROR;
         }
-        return $response;
+
+        return new ExceptionResponse($exception->getMessage(), $statusCode);
     }
 
 }

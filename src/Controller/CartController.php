@@ -39,8 +39,8 @@ class CartController extends AbstractController
 
     public function create(Request $request): JsonResponse
     {
-        $card = $this->cartService->createCart($request->toArray());
-        return ApiResponse::message(true, 'Card Created', $card);
+        $cart = $this->cartService->createCart($request->toArray());
+        return ApiResponse::message(true, 'Card Created', $cart);
     }
 
     /**
@@ -64,7 +64,7 @@ class CartController extends AbstractController
     public function delete($id): JsonResponse
     {
         $this->cartService->removeCart($id);
-        return ApiResponse::message(true, 'CArt Deleted with Cart\'s Id ' . $id);
+        return ApiResponse::message(true, 'Cart Deleted with Cart\'s Id ' . $id);
 
     }
 
