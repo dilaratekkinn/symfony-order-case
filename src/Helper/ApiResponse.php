@@ -8,58 +8,65 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 class ApiResponse
 {
     /**
-     * @param $response
-     * @param $status
-     * @return JsonResponse
-     */
-    private static function json($response, $status=null): JsonResponse
-    {
-        if (!$status){
-            return new JsonResponse($response);
-        }
-        return new JsonResponse($response, $status);
-    }
-
-    /**
-     * @param bool $success
+     * @param array $data
      * @param string $message
-     * @param $data
      * @return JsonResponse
      */
-    public static function message(bool $success, string $message, $data=null):JsonResponse
+    public static function create(string $message = '', array $data = []): JsonResponse
     {
-        $response = [
-            'message'=>$message
-        ];
-        if($data){
-            $response['data']=$data;
-        }
-        return ApiResponse::json($response);
+        return ApiResponse::response($message ?? 'Başarıyla Kaydedildi', $data, 201);
     }
 
     /**
-     * @param $data
+     * @param array $data
+     * @param string $message
      * @return JsonResponse
      */
-    public static function data($data):JsonResponse
+    public static function update(string $message = '', array $data = []): JsonResponse
     {
-        return ApiResponse::json($data);
+        return ApiResponse::response($message ?? 'Başarıyla Güncellendi', $data);
     }
 
     /**
+     * @param string $message
+     * @return JsonResponse
+     */
+    public static function remove(string $message = ''): JsonResponse
+    {
+        return ApiResponse::response($message ?? 'Başarıyla Silindi');
+    }
+
+    /**
+     * @param string $message
+     * @param array $data
+     * @return JsonResponse
+     */
+    public static function badRequest(string $message = '', array $data = []): JsonResponse
+    {
+        return ApiResponse::response($message ?? 'Başarısız istek', $data, 400);
+    }
+
+    /**
+     * @param array $data
+     * @param string $message
+     * @return JsonResponse
+     */
+    public static function success(array $data, string $message = ''): JsonResponse
+    {
+        return ApiResponse::response($message ?? 'Başarıyla Gerçekleştirildi', $data);
+    }
+
+    /**
+     * @param string $message
+     * @param array $data
      * @param int $status
-     * @param string $message
-     * @param array|null $errors
      * @return JsonResponse
      */
-    public static function exception(int $status, string $message, array $errors=null):JsonResponse
+    private static function response(string $message, array $data = [], int $status = 200): JsonResponse
     {
-        $response=[
-            'message'=>$message,
-        ];
-        if($errors){
-            $response['errors']=$errors;
-        }
-        return ApiResponse::json($response, $status);
+        return new JsonResponse([
+            'message' => $message,
+            'data' => $data
+        ], $status);
     }
 }

@@ -4,79 +4,54 @@ namespace App\Service;
 
 use App\Entity\Cart;
 use App\Repository\CartRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Security\Core\Exception\UserNotFoundException;
-use Symfony\Component\Security\Core\Security;
+use Symfony\Component\Security\Core\User\UserInterface;
 
-class CartService
+/**
+ * @property-read CartRepository $repository
+ */
+class CartService extends BaseService
 {
-    private $em;
-    private $cartRepository;
-    private $security;
-    private $discountService;
-    private $cartItemService;
-
-
-    public function __construct(
-
-        EntityManagerInterface $em,
-        CartRepository         $cartRepository,
-        Security               $security,
-        DiscountService        $discountService,
-        CartItemService        $cartItemService
-
-    )
+    /**
+     * @return Cart
+     */
+    public function getCart(): Cart
     {
-        $this->em = $em;
-        $this->cartRepository = $cartRepository;
-        $this->security = $security;
-        $this->discountService = $discountService;
-        $this->cartItemService = $cartItemService;
-    }
-
-    public function createCart(array $parameters)
-    {
-        $cart = $this->getCartByFilter(['user' => $this->security->getUser()]);
-        $this->cartItemService->addCartItemToCart($cart,$parameters['item'], $parameters['quantity']);
-        return $cart;
-
-    }
-
-    public function removeCart($user): bool
-    {
-        $cart = $this->cartRepository->findOneBy(['user' => $user]);
-        if (!$cart) {
-            throw new UserNotFoundException('User does not have a cart with this id');
+        $user = $this->getUser();
+        $cart = $this->getCartByOwnerUser();
+        if (is_null($cart)) {
+            $cart = new Cart();
+            $cart->setUser($user);
+            $this->repository->add($cart);
         }
-        $this->em->remove($cart);
-        $this->em->flush();
-        return true;
-
+        return $cart;
     }
 
-    public function showCart($user): array
+    /**
+     * @return void
+     */
+    public function removeCart(): void
     {
-        $cart = $this->getCartByFilter(['user' => $user]);
+        $cart = $this->getCartByOwnerUser();
+        $this->repository->remove($cart);
+    }
+
+    /**
+     * @return array
+     */
+    public function showCart(): array
+    {
+        $cart = $this->getCart();
+
         if ($cart->getCartItems()->isEmpty()) {
             throw new NotFoundHttpException('Your Cart Is Empty,Shop Now!');
         }
-
         $total = $this->getTotal($cart);
-        $changed = false;
+        $isChangeStock = $this->checkCartByProductStock($cart);
 
-        foreach ($cart->getCartItems() as $cartItem) {
-            if ($cartItem->getProduct()->getStock() < $cartItem->getQuantity()) {
-                $cartItem->setQuantity($cartItem->getProduct()->getStock());
-                $changed = true;
-            }
-        }
-        if ($changed) {
-            $this->em->persist($cart);
-            $this->em->flush();
-        }
-
-        $discounts = $this->discountService->showDiscount($cart->getCartItems(), $total);
+        $discountService = $this->container->get(DiscountService::class);
+        $discounts = $discountService->showDiscount($cart->getCartItems(), $total);
         if ($discounts !== null) {
             $discounts = [
                 'discount_reason' => $discounts['discountCampaign']->getDiscountReason(),
@@ -84,30 +59,73 @@ class CartService
                 'discount' => $discounts['discount']
             ];
         }
-        return [$cart, $total, $discounts, $changed];
+
+        return [
+            'cart' => $cart,
+            'total' => $total,
+            'discount' => $discounts,
+            'isChangeStock' => $isChangeStock
+        ];
     }
 
-    private function getCartByFilter($query)
+    /**
+     * @param Cart $cart
+     * @return float
+     */
+    public function getTotal(Cart $cart): float
     {
-        $cart = $this->cartRepository->findOneBy($query);
-        if (!$cart) {
-            $cart = new Cart();
-            $cart->setUser($this->security->getUser());
-            $this->em->persist($cart);
-            $this->em->flush();
+        $total = 0;
+        foreach ($cart->getCartItems() as $item) {
+            $total += $item->getProduct()->getPrice() * $item->getQuantity();
+        }
+        return $total;
+    }
+
+    /**
+     * @param Cart $cart
+     * @return void
+     */
+    public function checkCartByProductStock(Cart $cart): bool
+    {
+        $isChangeStock = false;
+        foreach ($cart->getCartItems() as $cartItem) {
+            if ($cartItem->getProduct()->getStock() < $cartItem->getQuantity()) {
+                $cartItem->setQuantity($cartItem->getProduct()->getStock());
+                $isChangeStock = true;
+            }
+        }
+
+        if ($isChangeStock) {
+            $this->repository->flush();
+        }
+        return $isChangeStock;
+    }
+
+    /**
+     * @param bool $throw
+     * @return Cart|null
+     */
+    public function getCartByOwnerUser(bool $throw = true): ?Cart
+    {
+        $cart = $this->repository->findOneBy(['user' => $this->getUser()]);
+        if (is_null($cart)) {
+            if ($throw) {
+                throw new UserNotFoundException('kullanının cartı yok');
+            }
         }
         return $cart;
-
     }
 
-    public static function getTotal($cart)
+    /**
+     * @return array
+     */
+    public static function getSubscribedServices(): array
     {
-        $return = 0;
-        foreach ($cart->getCartItems() as $item) {
-            $return += $item->getProduct()->getPrice() * $item->getQuantity();
-        }
-
-        return $return;
+        return array_merge(parent::getSubscribedServices(), [
+            'repository' => CartRepository::class,
+            DiscountService::class => DiscountService::class,
+            CartItemService::class => CartItemService::class
+        ]);
     }
 
 }

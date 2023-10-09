@@ -3,31 +3,29 @@
 namespace App\Service;
 
 use App\Entity\Order;
-use App\Entity\OrderItem;
 use App\Repository\OrderRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\Security\Core\Security;
 
-class OrderService
+/**
+ * @property-read OrderRepository $repository
+ */
+class OrderService extends BaseService
 {
 
     private $em;
-    private $security;
     private $orderRepository;
     private $discountService;
     private $orderItemService;
 
     public function __construct(
         EntityManagerInterface $em,
-        Security               $security,
         OrderRepository        $orderRepository,
         OrderItemService       $orderItemService,
         DiscountService        $discountService
     )
     {
         $this->em = $em;
-        $this->security = $security;
         $this->orderRepository = $orderRepository;
         $this->orderItemService = $orderItemService;
         $this->discountService = $discountService;
@@ -52,7 +50,7 @@ class OrderService
             $orders
                 ->join('o.user', 'u')
                 ->andWhere('u.id = :user')
-                ->setParameter('user', $this->security->getUser());
+                ->setParameter('user', $this->getUser());
         }
         return $orders
             ->getQuery()
@@ -61,43 +59,53 @@ class OrderService
 
     public function createOrder(): bool
     {
-        $cart = $this->security->getUser()->getCart();
-        if (!$cart) {
-            throw new NotFoundHttpException('You Do Not Have A Cart,Cant Create Order!');
+        $cartService = $this->container->get(CartService::class);
+        $cart = $cartService->getCartByOwnerUser();
+
+        $discounts = $this->discountService->showDiscount($cart->getCartItems(),$cartService->getTotal($cart));
+
+        if (count($cart->getCartItems()) == 0) {
+            throw new \Exception('Sepette ürün yok,order oluşamaz');
         }
 
-        $discounts = $this->discountService->showDiscount($cart->getCartItems(), CartService::getTotal($cart));
-
-        if ($cart->getCartItems() !== null) {
-
-            $order = new Order();
-            $order->setUser($cart->getUser());
-            $order->setDiscountPrice($discounts['discount'] ?? 0);
-            $order->setDiscount($discounts['discountCampaign'] ?? null);
-            $order->setStatus('wait');
-            $order->setTotal(CartService::getTotal($cart));
-            $this->em->persist($order);
-
-            foreach ($cart->getCartItems() as $cartItem) {
-                $this->orderItemService->addOrderItemToOrder($cartItem, $order);
-            }
-            $this->em->flush();
+        $order = new Order();
+        $order->setUser($this->getUser());
+        $order->setDiscountPrice($discounts['discount'] ?? 0);
+        $order->setDiscount($discounts['discountCampaign'] ?? null);
+        $order->setStatus('wait');
+        $order->setTotal($cartService->getTotal($cart));
+        $this->repository->add($order);
+        foreach ($cart->getCartItems() as $cartItem) {
+            $this->orderItemService->addOrderItemToOrder($cartItem, $order);
         }
-        $this->em->remove($cart);
-        $this->em->flush();
+        $cartService->removeCart();
+        $this->repository->flush();
         return true;
     }
 
 
     public function showOrder($id): array
     {
-        $order = $this->orderRepository->findOneBy(['user' => $this->security->getUser(), 'id' => $id]);
+        $order = $this->orderRepository->findOneBy(['user' => $this->getUser(), 'id' => $id]);
         if (!$order) {
             throw new NotFoundHttpException('There Is No Order With Thi ID!');
         }
         $amount = $order->getTotal() - $order->getDiscountPrice();
 
-        return [$order, $amount];
+        return [
+            'order' => $order,
+            'amount' => $amount
+        ];
     }
 
+    /**
+     * @return array
+     */
+    public static function getSubscribedServices(): array
+    {
+        return array_merge(parent::getSubscribedServices(), [
+            'repository' => OrderRepository::class,
+            CartService::class => CartService::class
+        ]);
+    }
 }

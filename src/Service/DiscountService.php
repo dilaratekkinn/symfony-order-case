@@ -6,7 +6,10 @@ use App\Repository\DiscountRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Security\Core\Security;
 
-class DiscountService
+/**
+ * @property-read DiscountRepository $repository
+ */
+class DiscountService extends BaseService
 {
     private $discountRepository;
     public function __construct(DiscountRepository $discountRepository)
@@ -31,5 +34,14 @@ class DiscountService
             ];
         }
         return null;
+    }
+
+    public static function getSubscribedServices(): array
+    {
+        return array_merge(parent::getSubscribedServices(), [
+            'repository' => DiscountRepository::class,
+            DiscountService::class => DiscountService::class,
+            CartItemService::class => CartItemService::class
+        ]);
     }
 }

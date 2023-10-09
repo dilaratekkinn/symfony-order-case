@@ -4,20 +4,18 @@ namespace App\Service;
 
 use App\Entity\Order;
 use App\Entity\OrderItem;
+use App\Repository\OrderItemRepository;
 use App\Repository\OrderRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Security\Core\Security;
 
-class OrderItemService
+/**
+ * @property-read OrderItemRepository $repository
+ */
+class OrderItemService extends BaseService
 {
 
-    private $em;
-
-    public function __construct(EntityManagerInterface $em)
-    {
-        $this->em = $em;
-    }
 
     public function addOrderItemToOrder($cartItem, $order): OrderItem
     {
@@ -28,13 +26,20 @@ class OrderItemService
         $orderItem->setBelongsToOrder($order);
         $orderItem->setProduct($cartItem->getProduct());
         $orderItem->setQuantity($cartItem->getQuantity());
-        $this->em->persist($orderItem);
-        $this->em->flush();
+        $this->repository->add($orderItem);
+
         $cartItem->getProduct()->setStock($cartItem->getProduct()->getStock() - $cartItem->getQuantity());
-        $this->em->persist($cartItem->getProduct());
 
         return $orderItem;
     }
 
-
+    /**
+     * @return array
+     */
+    public static function getSubscribedServices(): array
+    {
+        return array_merge(parent::getSubscribedServices(), [
+            'repository' => OrderItemRepository::class,
+        ]);
+    }
 }

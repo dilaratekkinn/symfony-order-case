@@ -3,6 +3,7 @@
 namespace App\EventListener;
 
 use App\ExceptionResponse\ExceptionResponse;
+use App\Helper\ApiResponse;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
@@ -25,21 +26,8 @@ class ExceptionListener
     public function onKernelException(ExceptionEvent $event): void
     {
         $exception = $event->getThrowable();
-        $response = $this->createResponse($exception);
+        $response = ApiResponse::badRequest($exception->getMessage());
         $event->setResponse($response);
-    }
-
-    private function createResponse($exception): ExceptionResponse
-    {
-        //exceptiondan alınan statusCode response'a yönlenir
-
-        if ($exception instanceof HttpExceptionInterface) {
-            $statusCode = $exception->getStatusCode();
-        } else {
-            $statusCode = Response::HTTP_INTERNAL_SERVER_ERROR;
-        }
-
-        return new ExceptionResponse($exception->getMessage(), $statusCode);
     }
 
 }

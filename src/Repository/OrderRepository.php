@@ -14,7 +14,7 @@ use Doctrine\Persistence\ManagerRegistry;
  * @method Order[]    findAll()
  * @method Order[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class OrderRepository extends ServiceEntityRepository
+class OrderRepository extends BaseRepository
 {
     public function __construct(ManagerRegistry $registry)
     {

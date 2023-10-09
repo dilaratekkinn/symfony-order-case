@@ -4,13 +4,15 @@ namespace App\Service;
 
 use App\Entity\CartItem;
 use App\Repository\CartItemRepository;
-use App\Repository\CartRepository;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Security\Core\Security;
 
-class CartItemService
+/**
+ * @property-read CartItemRepository $repository
+ */
+class CartItemService extends BaseService
 {
     private $em;
     private $productRepository;
@@ -20,17 +22,15 @@ class CartItemService
     public function __construct(
         EntityManagerInterface $em,
         ProductRepository      $productRepository,
-        Security               $security,
-        CartItemRepository     $cartItemRepository
+        Security               $security
     )
     {
         $this->em = $em;
         $this->productRepository = $productRepository;
         $this->security = $security;
-        $this->cartItemRepository = $cartItemRepository;
     }
 
-    public function addCartItemToCart($cart,$product, $quantity)
+    public function addCartItemToCart($cart, $product, $quantity)
     {
         $product = $this->checkProductStock($product, $quantity);
         $cartItem = $this->getCartItemByProductId($product);
@@ -87,4 +87,11 @@ class CartItemService
         return $product;
     }
 
+    public static function getSubscribedServices(): array
+    {
+        return array_merge(parent::getSubscribedServices(), [
+            'repository' => CartItemRepository::class,
+
+        ]);
+    }
 }

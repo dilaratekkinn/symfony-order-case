@@ -14,7 +14,7 @@ use Doctrine\Persistence\ManagerRegistry;
  * @method ApiToken[]    findAll()
  * @method ApiToken[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class ApiTokenRepository extends ServiceEntityRepository
+class ApiTokenRepository extends BaseRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
