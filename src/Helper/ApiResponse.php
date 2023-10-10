@@ -62,7 +62,7 @@ class ApiResponse
      * @param int $status
      * @return JsonResponse
      */
-    private static function response(string $message, array $data = [], int $status = 200): JsonResponse
+    public static function response(string $message, array $data = [], int $status = 200): JsonResponse
     {
         return new JsonResponse([
             'message' => $message,

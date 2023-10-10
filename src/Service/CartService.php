@@ -6,7 +6,6 @@ use App\Entity\Cart;
 use App\Repository\CartRepository;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Security\Core\Exception\UserNotFoundException;
-use Symfony\Component\Security\Core\User\UserInterface;
 
 /**
  * @property-read CartRepository $repository
@@ -23,8 +22,9 @@ class CartService extends BaseService
         if (is_null($cart)) {
             $cart = new Cart();
             $cart->setUser($user);
-            $this->repository->add($cart);
+            $this->repository->add($cart,true);
         }
+
         return $cart;
     }
 
@@ -108,11 +108,13 @@ class CartService extends BaseService
     public function getCartByOwnerUser(bool $throw = true): ?Cart
     {
         $cart = $this->repository->findOneBy(['user' => $this->getUser()]);
+        /*
         if (is_null($cart)) {
             if ($throw) {
                 throw new UserNotFoundException('kullanının cartı yok');
             }
         }
+        */
         return $cart;
     }
 

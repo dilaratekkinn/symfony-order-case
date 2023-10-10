@@ -2,20 +2,29 @@
 
 namespace App\Controller;
 
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse;
+use App\Service\OrderItemService;
 use Symfony\Component\Routing\Annotation\Route;
 
-class OrderItemController extends AbstractController
+/**
+ * @property-read OrderItemService $service
+ * @Route("api/orderItem", name="orderItem")
+ */
+class OrderItemController extends BaseController
 {
-    /**
-     * @Route("/order/item", name="app_order_item")
-     */
-    public function index(): JsonResponse
+
+    public function create()
     {
-        return $this->json([
-            'message' => 'Welcome to your new controller!',
-            'path' => 'src/Controller/OrderItemController.php',
+
+    }
+
+
+    /**
+     * @return array
+     */
+    public static function getSubscribedServices(): array
+    {
+        return array_merge(parent::getSubscribedServices(), [
+            'service' => OrderItemService::class
         ]);
     }
 }

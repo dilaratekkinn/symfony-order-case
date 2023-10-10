@@ -50,6 +50,21 @@ services:
       default:
         ipv4_address: 172.20.0.35
 
+  phpmyadmin:
+    restart: always
+    container_name: app-phpmyadmin
+    build:
+      context: ./docker/phpmyadmin
+      dockerfile: Dockerfile
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+    ports:
+      - "8080:80"
+    networks:
+      default:
+        ipv4_address: 172.20.0.40
+
 networks:
   default:
     driver: bridge

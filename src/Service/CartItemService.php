@@ -3,94 +3,81 @@
 namespace App\Service;
 
 use App\Entity\CartItem;
+use App\Entity\Product;
 use App\Repository\CartItemRepository;
-use App\Repository\ProductRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\Security\Core\Security;
 
 /**
  * @property-read CartItemRepository $repository
  */
 class CartItemService extends BaseService
 {
-    private $em;
-    private $productRepository;
-    private $security;
-    private $cartItemRepository;
-
-    public function __construct(
-        EntityManagerInterface $em,
-        ProductRepository      $productRepository,
-        Security               $security
-    )
+    public function addCartItemToCart(array $parameters): CartItem
     {
-        $this->em = $em;
-        $this->productRepository = $productRepository;
-        $this->security = $security;
-    }
+        $cartService = $this->container->get(CartService::class);
+        $cart = $cartService->getCart();
 
-    public function addCartItemToCart($cart, $product, $quantity)
-    {
-        $product = $this->checkProductStock($product, $quantity);
-        $cartItem = $this->getCartItemByProductId($product);
-        if (!$cartItem) {
+        $productService = $this->container->get(ProductService::class);
+        $product = $productService->getProductByID($parameters['item']);
+        $productService->checkProductStock($product, $parameters['quantity']);
+
+        $cartItem = $this->getCartItem($product);
+        if (is_null($cartItem)) {
             $cartItem = new CartItem();
             $cartItem->setCart($cart);
             $cartItem->setQuantity(0);
             $cartItem->setProduct($product);
+            $this->repository->add($cartItem);
         }
-        $cartItem->setQuantity($cartItem->getQuantity() + $quantity);
-        $this->em->persist($cartItem);
-        $this->em->flush();
+        $cartItem->setQuantity($cartItem->getQuantity() + $parameters['quantity']);
+        $this->repository->flush();
 
         return $cartItem;
     }
 
-    public function removeItem($id): bool
+    /**
+     * @param int $id
+     * @return void
+     */
+    public function removeItem(int $id): void
     {
-        $cartItem = $this->getCartItemByProductId($id);
-        $this->em->remove($cartItem);
-        $this->em->flush();
-        return true;
+        $productService = $this->container->get(ProductService::class);
+        $product = $productService->getProductByID($id);
+        $cartItem = $this->getCartItem($product);
+        $this->repository->remove($cartItem, true);
     }
 
-    public function updateCartItemQuantity(array $parameters, $id)
+    public function updateCartItemQuantity(array $parameters, int $id): CartItem
     {
-        $cartItem = $this->getCartItemByProductId($id);
+        $productService = $this->container->get(ProductService::class);
+        $product = $productService->getProductByID($id);
+        $cartItem = $this->getCartItem($product);
+
         if ($parameters['quantity'] > $cartItem->getProduct()->getStock()) {
             throw new NotFoundHttpException('There Is Not Enough Stock For This Product As You Wish!');
         }
         $cartItem->setQuantity($parameters['quantity']);
-        $this->em->persist($cartItem);
-        $this->em->flush();
+        $this->repository->flush();
         return $cartItem;
     }
 
-    private function getCartItemByProductId($id)
-    {
-        return $this->cartItemRepository->findOneBy([
-            'cart' => $this->security->getUser()->getCart(),
-            'product' => $this->productRepository->find($id)
-        ]);
-    }
 
-    private function checkProductStock($id, $quantity)
+    private function getCartItem(Product $product): ?CartItem
     {
-        $product = $this->productRepository->findOneBy(['id' => $id]);
-        if (!$product) {
-            throw new NotFoundHttpException('There Is No Product With This ID!');
-        }
-        if ($product->getStock() < $quantity) {
-            throw new NotFoundHttpException('There Is Not Enough Stock For This Product As You Wish!');
-        }
-        return $product;
+        $cartService = $this->container->get(CartService::class);
+        $cart = $cartService->getCart();
+        return $this->repository->findOneBy([
+            'cart' => $cart,
+            'product' => $product
+        ]);
     }
 
     public static function getSubscribedServices(): array
     {
         return array_merge(parent::getSubscribedServices(), [
             'repository' => CartItemRepository::class,
+            ProductService::class => ProductService::class,
+            CartService::class => CartService::class,
 
         ]);
     }

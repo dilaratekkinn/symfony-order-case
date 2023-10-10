@@ -15,12 +15,22 @@ use Symfony\Component\Routing\Annotation\Route;
 class CartItemController extends BaseController
 {
     /**
-     * @Route("/delete/{id}", name="app_cartItem_delete", methods={"DELETE"})
+     * @Route("/create", name="app_cartItem_create", methods={"POST"})
      */
-    public function delete($id): JsonResponse
+    public function create(Request $request): JsonResponse
     {
-        $this->service->removeItem($id);
-        return ApiResponse::remove('Item Removed From Cart with Product\'s Id ' . $id);
+        $this->service->addCartItemToCart($request->toArray());
+        return ApiResponse::create('Sepete Atıldı');
+
+    }
+
+    /**
+     * @Route("/delete/{productId}", name="app_cartItem_delete", methods={"DELETE"})
+     */
+    public function delete(int $productId): JsonResponse
+    {
+        $this->service->removeItem($productId);
+        return ApiResponse::remove('Item Removed From Cart with Product\'s Id ' . $productId);
     }
 
     /**

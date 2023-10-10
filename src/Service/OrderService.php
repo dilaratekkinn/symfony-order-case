@@ -62,7 +62,7 @@ class OrderService extends BaseService
         $cartService = $this->container->get(CartService::class);
         $cart = $cartService->getCartByOwnerUser();
 
-        $discounts = $this->discountService->showDiscount($cart->getCartItems(),$cartService->getTotal($cart));
+        $discounts = $this->discountService->showDiscount($cart->getCartItems(), $cartService->getTotal($cart));
 
         if (count($cart->getCartItems()) == 0) {
             throw new \Exception('Sepette ürün yok,order oluşamaz');
@@ -84,17 +84,17 @@ class OrderService extends BaseService
     }
 
 
-    public function showOrder($id): array
+    public function showOrder(int $id, bool $throw = false): array
     {
-        $order = $this->orderRepository->findOneBy(['user' => $this->getUser(), 'id' => $id]);
-        if (!$order) {
-            throw new NotFoundHttpException('There Is No Order With Thi ID!');
+        $order = $this->repository->findOneBy(['user' => $this->getUser(), 'id' => $id]);
+        if ($throw) {
+            throw new NotFoundHttpException('There Is No Order With This ID!');
         }
-        $amount = $order->getTotal() - $order->getDiscountPrice();
+        $orderTotalAmount = $order->getTotal() - $order->getDiscountPrice();
 
         return [
             'order' => $order,
-            'amount' => $amount
+            'amount' => $orderTotalAmount
         ];
     }
 
