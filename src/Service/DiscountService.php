@@ -3,23 +3,15 @@
 namespace App\Service;
 
 use App\Repository\DiscountRepository;
-use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Security\Core\Security;
 
 /**
  * @property-read DiscountRepository $repository
  */
 class DiscountService extends BaseService
 {
-    private $discountRepository;
-    public function __construct(DiscountRepository $discountRepository)
-    {
-        $this->discountRepository = $discountRepository;
-    }
-
     public function showDiscount($products, $currentTotal): ?array
     {
-        $discountCampaigns = $this->discountRepository->getActiveDiscounts();
+        $discountCampaigns = $this->repository->getActiveDiscounts();
         foreach ($discountCampaigns as $discountCampaign) {
             $class = '\\App\\DiscountClasses\\' . $discountCampaign->getClassName();
             $class = new $class($discountCampaign->getSettings(), $products, $currentTotal);

@@ -18,15 +18,16 @@ class OrderController extends BaseController
     /**
      * @Route("/", name="app_order")
      */
-    public function index(Request $request): JsonResponse
+    public function index(): JsonResponse
     {
-        $data = $this->service->index($request->toArray());
+        $data = $this->service->index();
         $serialized = $this->serializer->serialize($data, 'json', SerializationContext::create()->setGroups(['order']));
         return ApiResponse::success(json_decode($serialized, true));
     }
 
     /**
      * @Route("/create", name="app_order_create",methods={"POST"})
+     * @throws \Exception
      */
     public function create(): JsonResponse
     {

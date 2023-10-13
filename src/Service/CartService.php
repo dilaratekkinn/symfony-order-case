@@ -49,9 +49,9 @@ class CartService extends BaseService
         }
         $total = $this->getTotal($cart);
         $isChangeStock = $this->checkCartByProductStock($cart);
-
         $discountService = $this->container->get(DiscountService::class);
         $discounts = $discountService->showDiscount($cart->getCartItems(), $total);
+
         if ($discounts !== null) {
             $discounts = [
                 'discount_reason' => $discounts['discountCampaign']->getDiscountReason(),
@@ -59,7 +59,6 @@ class CartService extends BaseService
                 'discount' => $discounts['discount']
             ];
         }
-
         return [
             'cart' => $cart,
             'total' => $total,

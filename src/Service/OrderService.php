@@ -12,71 +12,32 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class OrderService extends BaseService
 {
-
-    private $em;
-    private $orderRepository;
-    private $discountService;
-    private $orderItemService;
-
-    public function __construct(
-        EntityManagerInterface $em,
-        OrderRepository        $orderRepository,
-        OrderItemService       $orderItemService,
-        DiscountService        $discountService
-    )
+    public function index(): array
     {
-        $this->em = $em;
-        $this->orderRepository = $orderRepository;
-        $this->orderItemService = $orderItemService;
-        $this->discountService = $discountService;
-    }
+        return $this->repository->listByUser($this->getUser());
 
-
-    public function index(array $parameters)
-    {
-        $defaults = [
-            'pageNumber' => 1,
-            'rowsPerPage' => '',
-            'searchText' => '',
-            'orderBy' => 'id',
-            'order' => 'desc'
-        ];
-        $parameters = array_merge($defaults, $parameters);
-        $repo = $this->em->getRepository(Order::class);
-        $orders = $repo->createQueryBuilder('o');
-
-        $orders->setMaxResults($parameters['rowsPerPage'])->setFirstResult($parameters['pageNumber'] - 1)->orderBy('o.id', 'desc');
-        if (isset($parameters['user'])) {
-            $orders
-                ->join('o.user', 'u')
-                ->andWhere('u.id = :user')
-                ->setParameter('user', $this->getUser());
-        }
-        return $orders
-            ->getQuery()
-            ->getResult();
     }
 
     public function createOrder(): bool
     {
         $cartService = $this->container->get(CartService::class);
         $cart = $cartService->getCartByOwnerUser();
-
-        $discounts = $this->discountService->showDiscount($cart->getCartItems(), $cartService->getTotal($cart));
-
         if (count($cart->getCartItems()) == 0) {
-            throw new \Exception('Sepette ürün yok,order oluşamaz');
+            throw new NotFoundHttpException('Sepette ürün yok,order oluşamaz');
         }
-
+        $discountService = $this->container->get(DiscountService::class);
+        $discount = $discountService->showDiscount($cart->getCartItems(), $cartService->getTotal($cart));
         $order = new Order();
         $order->setUser($this->getUser());
-        $order->setDiscountPrice($discounts['discount'] ?? 0);
-        $order->setDiscount($discounts['discountCampaign'] ?? null);
+        $order->setDiscountPrice($discount['discount'] ?? 0);
+        $order->setDiscount($discount['discountCampaign'] ?? null);
         $order->setStatus('wait');
         $order->setTotal($cartService->getTotal($cart));
         $this->repository->add($order);
+
+        $orderItemService = $this->container->get(OrderItemService::class);
         foreach ($cart->getCartItems() as $cartItem) {
-            $this->orderItemService->addOrderItemToOrder($cartItem, $order);
+            $orderItemService->addOrderItemToOrder($cartItem, $order);
         }
         $cartService->removeCart();
         $this->repository->flush();
@@ -105,7 +66,9 @@ class OrderService extends BaseService
     {
         return array_merge(parent::getSubscribedServices(), [
             'repository' => OrderRepository::class,
-            CartService::class => CartService::class
+            CartService::class => CartService::class,
+            DiscountService::class => DiscountService::class,
+            OrderItemService::class => OrderItemService::class
         ]);
     }
 }

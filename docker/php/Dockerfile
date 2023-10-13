@@ -41,3 +41,9 @@ RUN apk update \
     pdo_mysql \
     && docker-php-ext-enable \
     pdo_mysql
+
+
+# docker sıfırdan kaldırılırken çalışacak komutlar,bdf6adb440be docker ps ile kontrol et. docker exec -it
+# docker exec -it bdf6adb440be /usr/local/bin/php /var/www/html/bin/console make:migration
+# docker exec -it bdf6adb440be /usr/local/bin/php /var/www/html/bin/console doctrine:migrations:migrate
+# docker exec -it bdf6adb440be /usr/local/bin/php /var/www/html/bin/console doctrine:fixtures:load

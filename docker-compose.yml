@@ -60,7 +60,7 @@ services:
       PMA_HOST: mysql
       PMA_PORT: 3306
     ports:
-      - "8080:80"
+      - "8090:8090"
     networks:
       default:
         ipv4_address: 172.20.0.40

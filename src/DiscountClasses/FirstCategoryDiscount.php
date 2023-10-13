@@ -16,6 +16,13 @@ class FirstCategoryDiscount implements DiscountInterface
             'type' => 'number',//category'e özel ayarlanabilir
             'required' => true
         ],
+        'product_count'=>[
+            'name'=>'Ürünün toplam adetini girin',
+            'type'=>'number',
+            'min'=>2,
+            'default'=>6,
+            'required'=>true
+        ],
         'discount' => [
             'name' => 'indirim oranı',
             'type' => 'number',
@@ -53,7 +60,6 @@ class FirstCategoryDiscount implements DiscountInterface
                 }
             }
         }
-
         if ($count >= $this->settings['product_count']) {
             return ($found / 100) * $this->settings['discount'];
         }
