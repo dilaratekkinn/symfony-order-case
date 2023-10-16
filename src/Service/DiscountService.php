@@ -2,20 +2,25 @@
 
 namespace App\Service;
 
+use App\Factory\DiscountFactory;
 use App\Repository\DiscountRepository;
+use Doctrine\Common\Collections\Collection;
+use Symfony\Component\VarExporter\Exception\ClassNotFoundException;
 
 /**
  * @property-read DiscountRepository $repository
  */
 class DiscountService extends BaseService
 {
-    public function showDiscount($products, $currentTotal): ?array
+    /**
+     * @throws ClassNotFoundException
+     */
+    public function showDiscount(Collection $products, float $currentTotal): ?array
     {
         $discountCampaigns = $this->repository->getActiveDiscounts();
         foreach ($discountCampaigns as $discountCampaign) {
-            $class = '\\App\\DiscountClasses\\' . $discountCampaign->getClassName();
-            $class = new $class($discountCampaign->getSettings(), $products, $currentTotal);
-            $discount = $class->calculate();
+            $discountClass = DiscountFactory::create($discountCampaign->getClassName(), $discountCampaign->getSettings(), $products, $currentTotal);
+            $discount = $discountClass->calculate();
             if ($discount <= 0) {
                 continue;
             }
