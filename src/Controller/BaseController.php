@@ -6,10 +6,8 @@ use App\Service\BaseService;
 use JMS\Serializer\SerializerInterface;
 use Psr\Container\ContainerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
-use Symfony\Contracts\Service\ServiceSubscriberInterface;
 
-abstract class BaseController extends AbstractController implements ServiceSubscriberInterface
+abstract class BaseController extends AbstractController
 {
     /** @var ContainerInterface */
     protected $container;
@@ -37,8 +35,7 @@ abstract class BaseController extends AbstractController implements ServiceSubsc
     {
         return [
             SerializerInterface::class => SerializerInterface::class,
-            'service' => BaseService::class,
-            'security.token_storage' => '?' . TokenStorageInterface::class,
+            'service' => BaseService::class
         ];
     }
 }

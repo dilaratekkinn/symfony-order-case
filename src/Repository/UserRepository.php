@@ -20,14 +20,10 @@ use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
  */
 class UserRepository extends BaseRepository implements PasswordUpgraderInterface
 {
-    private $apiTokenRepository;
 
-    public function __construct(ManagerRegistry $registry, ApiTokenRepository $apiTokenRepository)
+    public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, User::class);
-
-        $this->apiTokenRepository = $apiTokenRepository;
-
     }
 
     public function add(User $entity, bool $flush = false): void
@@ -61,14 +57,4 @@ class UserRepository extends BaseRepository implements PasswordUpgraderInterface
 
         $this->add($user, true);
     }
-
-    public function getUserByToken(string $apiToken): ?User
-    {
-        $userToken = $this->apiTokenRepository->findOneBy(['token' => $apiToken]);
-        if (!$userToken) {
-            throw new UserNotFoundException();
-        }
-        return $userToken->getUser();
-    }
-
 }

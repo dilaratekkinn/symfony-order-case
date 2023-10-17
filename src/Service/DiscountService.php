@@ -2,9 +2,10 @@
 
 namespace App\Service;
 
-use App\Factory\DiscountFactory;
 use App\Repository\DiscountRepository;
-use Doctrine\Common\Collections\Collection;
+use App\Service\DiscountClass\BuyXGetY;
+use App\Service\DiscountClass\MoreXPercentY;
+use App\Service\DiscountClass\XPercentOverY;
 use Symfony\Component\VarExporter\Exception\ClassNotFoundException;
 
 /**
@@ -15,30 +16,41 @@ class DiscountService extends BaseService
     /**
      * @throws ClassNotFoundException
      */
-    public function showDiscount(Collection $products, float $currentTotal): ?array
+    public function showDiscount(): ?array
     {
-        $discountCampaigns = $this->repository->getActiveDiscounts();
-        foreach ($discountCampaigns as $discountCampaign) {
-            $discountClass = DiscountFactory::create($discountCampaign->getClassName(), $discountCampaign->getSettings(), $products, $currentTotal);
-            $discount = $discountClass->calculate();
-            if ($discount <= 0) {
-                continue;
-            }
+        $discountCampaignTypes = [
+            XPercentOverY::class,
+            BuyXGetY::class,
+            MoreXPercentY::class,
+        ];
 
-            return [
-                'discountCampaign' => $discountCampaign,
-                'discount' => $discount
-            ];
+        $discountTotal = 0;
+        $discountReasons = [];
+        foreach ($discountCampaignTypes as $discountType) {
+            $discountClass = $this->container->get($discountType);
+            $discount = $discountClass->calculate();
+            if (!is_null($discount)) {
+                $discountReasons[] = $discount;
+                $discountTotal += $discount['discount'];
+            }
         }
-        return null;
+
+        return [
+            'discountReasons' => $discountReasons,
+            'discountTotal' => $discountTotal
+        ];
     }
 
+    /**
+     * @return array|string[]
+     */
     public static function getSubscribedServices(): array
     {
         return array_merge(parent::getSubscribedServices(), [
             'repository' => DiscountRepository::class,
-            DiscountService::class => DiscountService::class,
-            CartItemService::class => CartItemService::class
+            XPercentOverY::class => XPercentOverY::class,
+            BuyXGetY::class => BuyXGetY::class,
+            MoreXPercentY::class => MoreXPercentY::class,
         ]);
     }
 }

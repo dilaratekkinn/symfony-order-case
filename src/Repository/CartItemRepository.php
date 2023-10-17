@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\Cart;
 use App\Entity\CartItem;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -21,6 +22,16 @@ class CartItemRepository extends BaseRepository
         parent::__construct($registry, CartItem::class);
     }
 
+    /**
+     * @param int $id
+     * @param Cart $cart
+     * @return CartItem|null
+     */
+    public function getCartItemByIdAndCart(int $id, Cart $cart): ?CartItem
+    {
+        return $this->findOneBy(['id' => $id, 'cart' => $cart]);
+    }
+
     public function add(CartItem $entity, bool $flush = false): void
     {
         $this->getEntityManager()->persist($entity);
@@ -38,29 +49,4 @@ class CartItemRepository extends BaseRepository
             $this->getEntityManager()->flush();
         }
     }
-
-//    /**
-//     * @return CartItem[] Returns an array of CartItem objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('c')
-//            ->andWhere('c.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('c.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
-
-//    public function findOneBySomeField($value): ?CartItem
-//    {
-//        return $this->createQueryBuilder('c')
-//            ->andWhere('c.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
 }

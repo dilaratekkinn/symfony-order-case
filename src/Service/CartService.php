@@ -5,7 +5,6 @@ namespace App\Service;
 use App\Entity\Cart;
 use App\Repository\CartRepository;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\Security\Core\Exception\UserNotFoundException;
 
 /**
  * @property-read CartRepository $repository
@@ -22,7 +21,7 @@ class CartService extends BaseService
         if (is_null($cart)) {
             $cart = new Cart();
             $cart->setUser($user);
-            $this->repository->add($cart,true);
+            $this->repository->add($cart, true);
         }
 
         return $cart;
@@ -50,15 +49,7 @@ class CartService extends BaseService
         $total = $this->getTotal($cart);
         $isChangeStock = $this->checkCartByProductStock($cart);
         $discountService = $this->container->get(DiscountService::class);
-        $discounts = $discountService->showDiscount($cart->getCartItems(), $total);
-
-        if ($discounts !== null) {
-            $discounts = [
-                'discount_reason' => $discounts['discountCampaign']->getDiscountReason(),
-                'discount_campaign' => $discounts['discountCampaign']->getContent(),
-                'discount' => $discounts['discount']
-            ];
-        }
+        $discounts = $discountService->showDiscount();
         return [
             'cart' => $cart,
             'total' => $total,

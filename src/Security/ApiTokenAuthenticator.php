@@ -2,6 +2,7 @@
 
 namespace App\Security;
 
+use App\Repository\ApiTokenRepository;
 use App\Repository\UserRepository;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,9 +20,12 @@ class ApiTokenAuthenticator extends AbstractAuthenticator
 {
     private $userRepository;
 
-    public function __construct(UserRepository $userRepository)
+    private $apiTokenRepository;
+
+    public function __construct(UserRepository $userRepository, ApiTokenRepository $apiTokenRepository)
     {
         $this->userRepository = $userRepository;
+        $this->apiTokenRepository = $apiTokenRepository;
     }
 
     public function supports(Request $request): ?bool
@@ -39,16 +43,16 @@ class ApiTokenAuthenticator extends AbstractAuthenticator
             throw new CustomUserMessageAuthenticationException('No API token provided');
         }
 
-
         //SelfValidatingPassport api token kullanacağı için authenticate etmekte kontroledeceği fieldara email ile değil token ile gidilir
         return new SelfValidatingPassport(
-            new UserBadge($apiToken, function ($apiToken) {
-                $user = $this->userRepository->getUserByToken($apiToken);
+            new UserBadge($apiToken, function () use ($apiToken) {
+                $user = $this->apiTokenRepository->findOneBy(['token' => $apiToken]);
                 if (!$user) {
                     throw new UserNotFoundException('User Not Found');
                 }
-                return $user;
-            }));
+                return $user->getUser();
+            })
+        );
     }
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response

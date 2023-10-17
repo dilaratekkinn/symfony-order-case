@@ -25,12 +25,12 @@ class CartItemController extends BaseController
     }
 
     /**
-     * @Route("/delete/{productId}", name="app_cartItem_delete", methods={"DELETE"})
+     * @Route("/delete/{id}", name="app_cartItem_delete", methods={"DELETE"})
      */
-    public function delete(int $productId): JsonResponse
+    public function delete(int $id): JsonResponse
     {
-        $this->service->removeItem($productId);
-        return ApiResponse::remove('Item Removed From Cart with Product\'s Id ' . $productId);
+        $this->service->removeItem($id);
+        return ApiResponse::remove('Item Removed From Cart with Product\'s Id ' . $id);
     }
 
     /**

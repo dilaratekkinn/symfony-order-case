@@ -39,7 +39,8 @@ class DiscountRepository extends BaseRepository
         }
     }
 
-    public function getActiveDiscounts(){
+    public function getActiveDiscounts()
+    {
         $qb = $this->createQueryBuilder('d');
         return $qb
             ->where("d.status = :status")
@@ -49,28 +50,4 @@ class DiscountRepository extends BaseRepository
             ->getResult();
     }
 
-//    /**
-//     * @return Discount[] Returns an array of Discount objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('d')
-//            ->andWhere('d.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('d.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
-
-//    public function findOneBySomeField($value): ?Discount
-//    {
-//        return $this->createQueryBuilder('d')
-//            ->andWhere('d.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
 }

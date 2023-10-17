@@ -12,6 +12,10 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class CartItemService extends BaseService
 {
+    /**
+     * @param array $parameters
+     * @return CartItem
+     */
     public function addCartItemToCart(array $parameters): CartItem
     {
         $cartService = $this->container->get(CartService::class);
@@ -41,17 +45,22 @@ class CartItemService extends BaseService
      */
     public function removeItem(int $id): void
     {
-        $productService = $this->container->get(ProductService::class);
-        $product = $productService->getProductByID($id);
-        $cartItem = $this->getCartItem($product);
+        $cartService = $this->container->get(CartService::class);
+        $cart = $cartService->getCart();
+        $cartItem = $this->repository->getCartItemByIdAndCart($id, $cart);
         $this->repository->remove($cartItem, true);
     }
 
+    /**
+     * @param array $parameters
+     * @param int $id
+     * @return CartItem
+     */
     public function updateCartItemQuantity(array $parameters, int $id): CartItem
     {
-        $productService = $this->container->get(ProductService::class);
-        $product = $productService->getProductByID($id);
-        $cartItem = $this->getCartItem($product);
+        $cartService = $this->container->get(CartService::class);
+        $cart = $cartService->getCart();
+        $cartItem = $this->repository->getCartItemByIdAndCart($id, $cart);
 
         if ($parameters['quantity'] > $cartItem->getProduct()->getStock()) {
             throw new NotFoundHttpException('There Is Not Enough Stock For This Product As You Wish!');
@@ -61,7 +70,10 @@ class CartItemService extends BaseService
         return $cartItem;
     }
 
-
+    /**
+     * @param Product $product
+     * @return CartItem|null
+     */
     private function getCartItem(Product $product): ?CartItem
     {
         $cartService = $this->container->get(CartService::class);
@@ -72,13 +84,15 @@ class CartItemService extends BaseService
         ]);
     }
 
+    /**
+     * @return array|string[]
+     */
     public static function getSubscribedServices(): array
     {
         return array_merge(parent::getSubscribedServices(), [
             'repository' => CartItemRepository::class,
             ProductService::class => ProductService::class,
             CartService::class => CartService::class,
-
         ]);
     }
 }
