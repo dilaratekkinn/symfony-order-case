@@ -3,54 +3,33 @@
 namespace App\Service\DiscountClass;
 
 
-use App\Service\CartService;
-use App\Service\DiscountService;
-use Psr\Container\ContainerInterface;
-use Symfony\Contracts\Service\ServiceSubscriberInterface;
+use Doctrine\Common\Collections\Collection;
 
-class BuyXGetY implements DiscountInterface, ServiceSubscriberInterface
+class BuyXGetY implements DiscountInterface
 {
 
-    private $cartService;
-    private $discountService;
+    private $cartItem;
+    private $settings;
 
-    public function __construct(ContainerInterface $container)
+    public function __construct(array $settings, Collection $cartItem, float $total)
     {
-        $this->cartService = $container->get(CartService::class);
-        $this->discountService = $container->get(DiscountService::class);
+        $this->settings = $settings;
+        $this->cartItem = $cartItem;
     }
 
-    public function calculate(): ?array
+    public function calculate(): ?float
     {
-        $cartItems = $this->cartService->getCart()->getCartItems();
-        $discounts = $this->discountService->repository->findBy(
-            ['discountReason' => 'BUY_X_GET_Y', 'status' => 1],
-            ['priority' => 'ASC']
-        );
 
-        foreach ($discounts as $discount) {
-            $settings = $discount->getSettings();
-            foreach ($cartItems as $item) {
-                foreach ($item->getProduct()->getCategory() as $category) {
-                    if (in_array($category->getId(), $settings['categories']) && $item->getQuantity() >= $settings['product_count']) {
-                        return [
-                            'content' => $discount->getContent(),
-                            'discount' => $item->getProduct()->getPrice() * $settings['free_product_count']
-                        ];
-                    }
+        foreach ($this->cartItem as $item) {
+            foreach ($item->getProduct()->getCategory() as $category) {
+                if (in_array($category->getId(), $this->settings['categories']) && $item->getQuantity() >= $this->settings['product_count']) {
+                    return $item->getProduct()->getPrice() * $this->settings['free_product_count'];
+
                 }
             }
         }
 
         return null;
-    }
-
-    public static function getSubscribedServices(): array
-    {
-        return [
-            CartService::class => CartService::class,
-            DiscountService::class => DiscountService::class
-        ];
     }
 
 }

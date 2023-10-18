@@ -19,7 +19,7 @@ class CartController extends BaseController
      */
     public function show(): JsonResponse
     {
-        $data = $this->service->showCart();
+        $data = $this->container->get(CartService::class)->showCart();
         $serialized = $this->serializer->serialize($data, 'json',
             SerializationContext::create()->setGroups(['cart'])
         );
@@ -31,7 +31,7 @@ class CartController extends BaseController
      */
     public function delete(): JsonResponse
     {
-        $this->service->removeCart();
+        $this->container->get(CartService::class)->removeCart();
         return ApiResponse::remove('Cart Deleted');
     }
 
@@ -41,7 +41,7 @@ class CartController extends BaseController
     public static function getSubscribedServices(): array
     {
         return array_merge(parent::getSubscribedServices(), [
-            'service' => CartService::class
+            CartService::class => CartService::class
         ]);
     }
 }

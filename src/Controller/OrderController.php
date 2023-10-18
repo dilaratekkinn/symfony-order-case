@@ -20,7 +20,7 @@ class OrderController extends BaseController
      */
     public function index(): JsonResponse
     {
-        $data = $this->service->index();
+        $data = $this->container->get(OrderService::class)->index();
         $serialized = $this->serializer->serialize($data, 'json', SerializationContext::create()->setGroups(['order']));
         return ApiResponse::success(json_decode($serialized, true));
     }
@@ -31,7 +31,7 @@ class OrderController extends BaseController
      */
     public function create(): JsonResponse
     {
-        $this->service->createOrder();
+        $this->container->get(OrderService::class)->createOrder();
         return ApiResponse::create('Order Created');
     }
 
@@ -40,10 +40,16 @@ class OrderController extends BaseController
      */
     public function show($id): JsonResponse
     {
-        $data = $this->service->showOrder($id);
+        $data = $this->container->get(OrderService::class)->showOrder($id);
         $serialized = $this->serializer->serialize($data, 'json', SerializationContext::create()->setGroups(['order']));
         return ApiResponse::success(json_decode($serialized, true));
     }
+
+    public function remove(){
+        //order remove ederken status delete edebilirsin
+    }
+
+
 
     /**
      * @return array
@@ -51,7 +57,7 @@ class OrderController extends BaseController
     public static function getSubscribedServices(): array
     {
         return array_merge(parent::getSubscribedServices(), [
-            'service' => OrderService::class
+            OrderService::class => OrderService::class
         ]);
     }
 }

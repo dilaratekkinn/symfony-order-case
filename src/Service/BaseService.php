@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Repository\BaseRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
@@ -16,11 +17,15 @@ abstract class BaseService implements ServiceSubscriberInterface
 
     /** @var mixed|null */
     public $repository = null;
+    /**
+     * @var EntityManagerInterface
+     */
+    private $em;
 
-    public function __construct(ContainerInterface $container)
+    public function __construct(ContainerInterface $container, EntityManagerInterface $em)
     {
         $this->container = $container;
-        $this->repository = $this->container->get('repository');
+        $this->em = $em;
     }
 
     /**
@@ -38,6 +43,11 @@ abstract class BaseService implements ServiceSubscriberInterface
         return $user;
     }
 
+    public function getEntityManager(): EntityManagerInterface
+    {
+        return $this->em;
+    }
+
     /**
      * @return TokenInterface|null
      */
@@ -47,14 +57,12 @@ abstract class BaseService implements ServiceSubscriberInterface
     }
 
 
-
     /**
      * @return string[]
      */
     public static function getSubscribedServices(): array
     {
         return [
-            'repository' => BaseRepository::class,
             'security.token_storage' => '?' . TokenStorageInterface::class,
         ];
     }

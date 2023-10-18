@@ -15,8 +15,6 @@ abstract class BaseController extends AbstractController
     /** @var SerializerInterface */
     protected $serializer;
 
-    /** @var mixed|null */
-    protected $service = null;
 
     /**
      * @param ContainerInterface $container
@@ -25,7 +23,6 @@ abstract class BaseController extends AbstractController
     {
         $this->container = $container;
         $this->serializer = $this->container->get(SerializerInterface::class);
-        $this->service = $this->container->get('service');
     }
 
     /**
@@ -35,7 +32,6 @@ abstract class BaseController extends AbstractController
     {
         return [
             SerializerInterface::class => SerializerInterface::class,
-            'service' => BaseService::class
         ];
     }
 }

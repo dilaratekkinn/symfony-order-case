@@ -9,7 +9,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
 /**
- * @property-read CartItemService $service
  * @Route("api/cartItem", name="cartItem")
  */
 class CartItemController extends BaseController
@@ -19,9 +18,8 @@ class CartItemController extends BaseController
      */
     public function create(Request $request): JsonResponse
     {
-        $this->service->addCartItemToCart($request->toArray());
+        $this->container->get(CartItemService::class)->addCartItemToCart($request->toArray());
         return ApiResponse::create('Sepete Atıldı');
-
     }
 
     /**
@@ -29,7 +27,7 @@ class CartItemController extends BaseController
      */
     public function delete(int $id): JsonResponse
     {
-        $this->service->removeItem($id);
+        $this->container->get(CartItemService::class)->removeItem($id);
         return ApiResponse::remove('Item Removed From Cart with Product\'s Id ' . $id);
     }
 
@@ -38,7 +36,7 @@ class CartItemController extends BaseController
      */
     public function update(Request $request, $id): JsonResponse
     {
-        $this->service->updateCartItemQuantity($request->toArray(), $id);
+        $this->container->get(CartItemService::class)->updateCartItemQuantity($request->toArray(), $id);
         return ApiResponse::update('Cart Item Stock Quantity');
     }
 
@@ -48,7 +46,7 @@ class CartItemController extends BaseController
     public static function getSubscribedServices(): array
     {
         return array_merge(parent::getSubscribedServices(), [
-            'service' => CartItemService::class
+            CartItemService::class => CartItemService::class
         ]);
     }
 }

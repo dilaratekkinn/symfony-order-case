@@ -3,12 +3,9 @@
 namespace App\Service;
 
 use App\Entity\Product;
-use App\Repository\ProductRepository;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-/**
- * @property-read ProductRepository $repository
- */
+
 class ProductService extends BaseService
 {
     public function checkProductStock(Product $product, float $quantity): ?Product
@@ -21,18 +18,11 @@ class ProductService extends BaseService
 
     public function getProductByID(int $id): Product
     {
-        $product = $this->repository->find($id);
+        $product = $this->getEntityManager()->getRepository(Product::class)->find($id);
         if (is_null($product)) {
             throw new NotFoundHttpException('There Is No Product With This ID!');
         }
         return $product;
-    }
-
-    public static function getSubscribedServices(): array
-    {
-        return array_merge(parent::getSubscribedServices(), [
-            'repository' => ProductRepository::class,
-        ]);
     }
 
 

@@ -21,7 +21,7 @@ class CartService extends BaseService
         if (is_null($cart)) {
             $cart = new Cart();
             $cart->setUser($user);
-            $this->repository->add($cart, true);
+            $this->getEntityManager()->getRepository(Cart::class)->add($cart, true);
         }
 
         return $cart;
@@ -32,8 +32,9 @@ class CartService extends BaseService
      */
     public function removeCart(): void
     {
+        //id ile işlem yap.
         $cart = $this->getCartByOwnerUser();
-        $this->repository->remove($cart);
+        $this->getEntityManager()->getRepository(Cart::class)->remove($cart,true);
     }
 
     /**
@@ -42,7 +43,6 @@ class CartService extends BaseService
     public function showCart(): array
     {
         $cart = $this->getCart();
-
         if ($cart->getCartItems()->isEmpty()) {
             throw new NotFoundHttpException('Your Cart Is Empty,Shop Now!');
         }
@@ -86,7 +86,7 @@ class CartService extends BaseService
         }
 
         if ($isChangeStock) {
-            $this->repository->flush();
+            $this->getEntityManager()->getRepository(Cart::class)->flush();
         }
         return $isChangeStock;
     }
@@ -97,15 +97,7 @@ class CartService extends BaseService
      */
     public function getCartByOwnerUser(bool $throw = true): ?Cart
     {
-        $cart = $this->repository->findOneBy(['user' => $this->getUser()]);
-        /*
-        if (is_null($cart)) {
-            if ($throw) {
-                throw new UserNotFoundException('kullanının cartı yok');
-            }
-        }
-        */
-        return $cart;
+        return $this->getEntityManager()->getRepository(Cart::class)->findOneBy(['user' => $this->getUser()]);
     }
 
     /**
@@ -114,7 +106,6 @@ class CartService extends BaseService
     public static function getSubscribedServices(): array
     {
         return array_merge(parent::getSubscribedServices(), [
-            'repository' => CartRepository::class,
             DiscountService::class => DiscountService::class,
             CartItemService::class => CartItemService::class
         ]);

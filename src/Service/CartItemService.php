@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Entity\Cart;
 use App\Entity\CartItem;
 use App\Entity\Product;
 use App\Repository\CartItemRepository;
@@ -25,19 +26,21 @@ class CartItemService extends BaseService
         $product = $productService->getProductByID($parameters['item']);
         $productService->checkProductStock($product, $parameters['quantity']);
 
-        $cartItem = $this->getCartItem($product);
+        $cartItem = $this->getEntityManager()->getRepository(CartItem::class)->getCartItemByProductAndCart($cart, $product);
+
         if (is_null($cartItem)) {
             $cartItem = new CartItem();
             $cartItem->setCart($cart);
             $cartItem->setQuantity(0);
             $cartItem->setProduct($product);
-            $this->repository->add($cartItem);
+            $this->getEntityManager()->getRepository(CartItem::class)->add($cartItem);
         }
         $cartItem->setQuantity($cartItem->getQuantity() + $parameters['quantity']);
-        $this->repository->flush();
+        $this->getEntityManager()->getRepository(CartItem::class)->flush();
 
         return $cartItem;
     }
+
 
     /**
      * @param int $id
@@ -45,10 +48,9 @@ class CartItemService extends BaseService
      */
     public function removeItem(int $id): void
     {
-        $cartService = $this->container->get(CartService::class);
-        $cart = $cartService->getCart();
-        $cartItem = $this->repository->getCartItemByIdAndCart($id, $cart);
-        $this->repository->remove($cartItem, true);
+        $cartItem = $this->getCartItem($id);
+        $this->getEntityManager()->getRepository(CartItem::class)->find($id)->remove($cartItem, true);
+
     }
 
     /**
@@ -58,30 +60,27 @@ class CartItemService extends BaseService
      */
     public function updateCartItemQuantity(array $parameters, int $id): CartItem
     {
-        $cartService = $this->container->get(CartService::class);
-        $cart = $cartService->getCart();
-        $cartItem = $this->repository->getCartItemByIdAndCart($id, $cart);
-
+        $cartItem = $this->getCartItem($id);
         if ($parameters['quantity'] > $cartItem->getProduct()->getStock()) {
             throw new NotFoundHttpException('There Is Not Enough Stock For This Product As You Wish!');
         }
         $cartItem->setQuantity($parameters['quantity']);
-        $this->repository->flush();
+        $this->getEntityManager()->getRepository(CartItem::class)->flush();
+
         return $cartItem;
     }
 
     /**
-     * @param Product $product
+     * @param $id
      * @return CartItem|null
      */
-    private function getCartItem(Product $product): ?CartItem
+    public function getCartItem($id): ?CartItem
     {
-        $cartService = $this->container->get(CartService::class);
-        $cart = $cartService->getCart();
-        return $this->repository->findOneBy([
-            'cart' => $cart,
-            'product' => $product
-        ]);
+        $cartItem = $this->getEntityManager()->getRepository(CartItem::class)->find($id);
+        if (is_null($cartItem)) {
+            throw new NotFoundHttpException('There Is No CartItem SWıth This ID!');
+        }
+        return $cartItem;
     }
 
     /**
@@ -90,7 +89,6 @@ class CartItemService extends BaseService
     public static function getSubscribedServices(): array
     {
         return array_merge(parent::getSubscribedServices(), [
-            'repository' => CartItemRepository::class,
             ProductService::class => ProductService::class,
             CartService::class => CartService::class,
         ]);

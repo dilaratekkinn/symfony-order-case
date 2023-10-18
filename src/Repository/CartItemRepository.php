@@ -4,8 +4,10 @@ namespace App\Repository;
 
 use App\Entity\Cart;
 use App\Entity\CartItem;
+use App\Entity\Product;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * @extends ServiceEntityRepository<CartItem>
@@ -23,13 +25,13 @@ class CartItemRepository extends BaseRepository
     }
 
     /**
-     * @param int $id
      * @param Cart $cart
+     * @param Product $product
      * @return CartItem|null
      */
-    public function getCartItemByIdAndCart(int $id, Cart $cart): ?CartItem
+    public function getCartItemByProductAndCart(Cart $cart, Product $product): ?CartItem
     {
-        return $this->findOneBy(['id' => $id, 'cart' => $cart]);
+        return $this ->findOneBy(['cart' => $cart, 'product' => $product]);
     }
 
     public function add(CartItem $entity, bool $flush = false): void
