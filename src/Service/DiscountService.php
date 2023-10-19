@@ -4,7 +4,7 @@ namespace App\Service;
 
 use App\Entity\Discount;
 use App\Repository\DiscountRepository;
-use App\Service\DiscountClass\DiscountInterface;
+use App\Service\Factory\DiscountFactory;
 
 /**
  * @property-read DiscountRepository $repository
@@ -15,6 +15,19 @@ class DiscountService extends BaseService
      * @return array|null
      */
     public function showDiscount(): ?array
+    {
+        $discount=$this->getDiscount();
+            if (!is_null($discount)) {
+                return [
+                    'discountContent' => $discount['discountClass']->getContent(),
+                    'discountReason' => $discount['discountClass']->getDiscountReason(),
+                    'discountTotal' => $discount['discountTotal']
+                ];
+            }
+        return null;
+    }
+
+    public function getDiscount(): ?array
     {
         /**
          * Keyler kampanya adını temsil eder,unique olmalıdır.Apiden kullanıcya id yerine keyler döner key=id denilebilir.
@@ -29,36 +42,16 @@ class DiscountService extends BaseService
         $items = $cart->getCartItems();
         $total = $cartService->getTotal($cart);
         /**
-         *
-         * Burada Factory kullanamama sebebi bu döngü başlayana kadar DiscountClass içerisinde hangi sınıflar olduğunu ve hangisinin çalışması gerektiği bilinmez.
          * DiscountClass içerisinde 259 kampanya bulunabilir ama sistemde 2 kampanya aktif o yüzden sadece aktif olanları tek sorguda getirmeli
          */
         $discountClasses = $this->getEntityManager()->getRepository(Discount::class)->getActiveDiscounts();
         foreach ($discountClasses as $discountClass) {
-
-            if (!class_exists($discountClass->getClassName())) {
-                continue;
-            }
-            $class = $discountClass->getClassName();
-            /**
-             * buradan classın içeride hangi parametreleri kullanacğı bilinmez,ona kullanması için bu değişkenler verilir içeride ne yaptığı class'a aittir.Dönen cevaptan sadece
-             * yapılacaksa indirim yapılmayacaksa null beklenir.
-             * Parametre sayıları dinamikte ayarlanabilir ( new $class(...$parametersx)) parametreler bir array olur ... operatoru içerisidneki keyleri açar
-             * her classınn içerinde statik olarak istediği dataları gösteren bir schemaya ihtiyaç duyulur burada oluşturulacak her yeni kampanyanın ihtiyaç duyabileceği değişkenler asbitlenmiştir
-             */
-
-            $class = new $class($discountClass->getSettings(), $items, $total);
-            if (!$class instanceof DiscountInterface) {
-                /**
-                 * Classı Interface kurallarına bağlamak için ekstra kontrol
-                 */
-                continue;
-            }
-            $discount = $class->calculate();
+            $class = $this->container->get(DiscountFactory::class)->create($discountClass->getClassName());
+            $discount = $class->calculate($discountClass->getSettings(), $items, $total);
+            // Entity ve indirim fiyatı dönüldü
             if (!is_null($discount)) {
                 return [
-                    'discountContent' => $discountClass->getContent(),
-                    'discountReason' => $discountClass->getDiscountReason(),
+                    'discountClass' => $discountClass,
                     'discountTotal' => $discount
                 ];
             }
@@ -72,7 +65,8 @@ class DiscountService extends BaseService
     public static function getSubscribedServices(): array
     {
         return array_merge(parent::getSubscribedServices(), [
-            CartService::class => CartService::class
+            CartService::class => CartService::class,
+            DiscountFactory::class => DiscountFactory::class
         ]);
     }
 }

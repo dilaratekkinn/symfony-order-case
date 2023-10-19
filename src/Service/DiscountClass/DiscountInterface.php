@@ -6,6 +6,5 @@ use Doctrine\Common\Collections\Collection;
 
 interface DiscountInterface
 {
-    public function __construct(array $settings, Collection $cartItem, float $total);
-    public function calculate(): ?float;
+    public function calculate(array $settings, Collection $cartItem, float $total): ?float;
 }

@@ -36,6 +36,8 @@ class OrderController extends BaseController
     }
 
     /**
+     * @param $id
+     * @return JsonResponse
      * @Route("/show/{id}", name="app_order_show",methods={"GET"})
      */
     public function show($id): JsonResponse
@@ -45,11 +47,16 @@ class OrderController extends BaseController
         return ApiResponse::success(json_decode($serialized, true));
     }
 
-    public function remove(){
-        //order remove ederken status delete edebilirsin
+    /**
+     * @param int $id
+     * @return JsonResponse
+     * @Route("/delete/{id}", name="app_order_delete", methods={"DELETE"})
+     */
+    public function delete(int $id): JsonResponse
+    {
+        $this->container->get(OrderService::class)->removeOrder($id);
+        return ApiResponse::remove('Order Deleted');
     }
-
-
 
     /**
      * @return array

@@ -34,6 +34,11 @@ class CartItemRepository extends BaseRepository
         return $this ->findOneBy(['cart' => $cart, 'product' => $product]);
     }
 
+    /**
+     * @param CartItem $entity
+     * @param bool $flush
+     * @return void
+     */
     public function add(CartItem $entity, bool $flush = false): void
     {
         $this->getEntityManager()->persist($entity);
@@ -43,6 +48,11 @@ class CartItemRepository extends BaseRepository
         }
     }
 
+    /**
+     * @param CartItem $entity
+     * @param bool $flush
+     * @return void
+     */
     public function remove(CartItem $entity, bool $flush = false): void
     {
         $this->getEntityManager()->remove($entity);
@@ -50,5 +60,18 @@ class CartItemRepository extends BaseRepository
         if ($flush) {
             $this->getEntityManager()->flush();
         }
+    }
+
+    /**
+     * @param $id
+     * @return CartItem|null
+     */
+    public function getCartItem($id): ?CartItem
+    {
+        $cartItem = $this->find($id);
+        if (is_null($cartItem)) {
+            throw new NotFoundHttpException('There Is No CartItem SWıth This ID!');
+        }
+        return $cartItem;
     }
 }

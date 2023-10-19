@@ -32,7 +32,6 @@ class CartService extends BaseService
      */
     public function removeCart(): void
     {
-        //id ile işlem yap.
         $cart = $this->getCartByOwnerUser();
         $this->getEntityManager()->getRepository(Cart::class)->remove($cart,true);
     }
@@ -92,10 +91,9 @@ class CartService extends BaseService
     }
 
     /**
-     * @param bool $throw
      * @return Cart|null
      */
-    public function getCartByOwnerUser(bool $throw = true): ?Cart
+    public function getCartByOwnerUser(): ?Cart
     {
         return $this->getEntityManager()->getRepository(Cart::class)->findOneBy(['user' => $this->getUser()]);
     }

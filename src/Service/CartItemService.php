@@ -21,10 +21,8 @@ class CartItemService extends BaseService
     {
         $cartService = $this->container->get(CartService::class);
         $cart = $cartService->getCart();
-
         $productService = $this->container->get(ProductService::class);
-        $product = $productService->getProductByID($parameters['item']);
-        $productService->checkProductStock($product, $parameters['quantity']);
+        $product=$productService->checkProduct($parameters['item'], $parameters['quantity']);
 
         $cartItem = $this->getEntityManager()->getRepository(CartItem::class)->getCartItemByProductAndCart($cart, $product);
 
@@ -48,8 +46,8 @@ class CartItemService extends BaseService
      */
     public function removeItem(int $id): void
     {
-        $cartItem = $this->getCartItem($id);
-        $this->getEntityManager()->getRepository(CartItem::class)->find($id)->remove($cartItem, true);
+        $cartItem = $this->getEntityManager()->getRepository(CartItem::class)->getCartItem($id);
+        $this->getEntityManager()->getRepository(CartItem::class)->remove($cartItem, true);
 
     }
 
@@ -60,7 +58,7 @@ class CartItemService extends BaseService
      */
     public function updateCartItemQuantity(array $parameters, int $id): CartItem
     {
-        $cartItem = $this->getCartItem($id);
+        $cartItem = $this->getEntityManager()->getRepository(CartItem::class)->getCartItem($id);
         if ($parameters['quantity'] > $cartItem->getProduct()->getStock()) {
             throw new NotFoundHttpException('There Is Not Enough Stock For This Product As You Wish!');
         }
@@ -70,18 +68,6 @@ class CartItemService extends BaseService
         return $cartItem;
     }
 
-    /**
-     * @param $id
-     * @return CartItem|null
-     */
-    public function getCartItem($id): ?CartItem
-    {
-        $cartItem = $this->getEntityManager()->getRepository(CartItem::class)->find($id);
-        if (is_null($cartItem)) {
-            throw new NotFoundHttpException('There Is No CartItem SWıth This ID!');
-        }
-        return $cartItem;
-    }
 
     /**
      * @return array|string[]

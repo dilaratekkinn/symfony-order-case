@@ -4,7 +4,6 @@ namespace App\Service;
 
 use App\Entity\Order;
 use App\Repository\OrderRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -12,25 +11,32 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class OrderService extends BaseService
 {
+    /**
+     * @return array
+     */
     public function index(): array
     {
         return $this->getEntityManager()->getRepository(Order::class)->listByUser($this->getUser());
 
     }
 
+    /**
+     * @return bool
+     */
     public function createOrder(): bool
     {
         $cartService = $this->container->get(CartService::class);
         $cart = $cartService->getCartByOwnerUser();
-        if (count($cart->getCartItems()) == 0) {
+
+        if (is_null($cart) || count($cart->getCartItems()) == 0) {
             throw new NotFoundHttpException('Sepette ürün yok,order oluşamaz');
         }
         $discountService = $this->container->get(DiscountService::class);
-        $discount = $discountService->showDiscount();
+        $discount = $discountService->getDiscount();
         $order = new Order();
         $order->setUser($this->getUser());
-        $order->setDiscountPrice($discount['discount'] ?? 0);
-        $order->setDiscount($discount['discountCampaign'] ?? null);
+        $order->setDiscountPrice($discount['discountTotal'] ?? 0);
+        $order->setDiscount( $discount['discountClass'] ?? null);
         $order->setStatus('wait');
         $order->setTotal($cartService->getTotal($cart));
         $this->getEntityManager()->getRepository(Order::class)->add($order);
@@ -39,24 +45,53 @@ class OrderService extends BaseService
         foreach ($cart->getCartItems() as $cartItem) {
             $orderItemService->addOrderItemToOrder($cartItem, $order);
         }
-        $cartService->removeCart();
         $this->getEntityManager()->getRepository(Order::class)->flush();
+
+        $cartService->removeCart();
+
         return true;
     }
 
-
-    public function showOrder(int $id, bool $throw = false): array
+    /**
+     * @param int $id
+     * @return array
+     */
+    public function showOrder(int $id): array
     {
-        $order = $this->getEntityManager()->getRepository(Order::class)->findOneBy(['user' => $this->getUser(), 'id' => $id]);
-        if ($throw) {
-            throw new NotFoundHttpException('There Is No Order With This ID!');
-        }
+        $order = $this->checkOrder($id);
         $orderTotalAmount = $order->getTotal() - $order->getDiscountPrice();
 
         return [
             'order' => $order,
             'amount' => $orderTotalAmount
         ];
+    }
+
+    /**
+     * @param int $id
+     * @return void
+     */
+    public function removeOrder(int $id) : void
+    {
+        $order = $this->checkOrder($id);
+        if($order->getStatus() != 'wait'){
+            throw new NotFoundHttpException('You can cancel order while only waiting status!');
+        }
+        $order->setStatus('canceled');
+        $this->getEntityManager()->getRepository(Order::class)->flush();
+    }
+
+    /**
+     * @param int $id
+     * @return Order|null
+     */
+    public function checkOrder(int $id): ?Order
+    {
+        $order = $this->getEntityManager()->getRepository(Order::class)->findOneBy(['user' => $this->getUser(), 'id' => $id]);
+        if (is_null($order)) {
+            throw new NotFoundHttpException('There Is No Order With This ID!');
+        }
+        return $order;
     }
 
     /**
