@@ -33,7 +33,7 @@ class CartService extends BaseService
     public function removeCart(): void
     {
         $cart = $this->getCartByOwnerUser();
-        $this->getEntityManager()->getRepository(Cart::class)->remove($cart,true);
+        $this->getEntityManager()->getRepository(Cart::class)->remove($cart, true);
     }
 
     /**
@@ -85,7 +85,8 @@ class CartService extends BaseService
         }
 
         if ($isChangeStock) {
-            $this->getEntityManager()->getRepository(Cart::class)->flush();
+            $this->getEntityManager()->persist($cart);
+            $this->getEntityManager()->flush();
         }
         return $isChangeStock;
     }

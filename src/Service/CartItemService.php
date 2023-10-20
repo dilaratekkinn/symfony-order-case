@@ -2,9 +2,7 @@
 
 namespace App\Service;
 
-use App\Entity\Cart;
 use App\Entity\CartItem;
-use App\Entity\Product;
 use App\Repository\CartItemRepository;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -22,7 +20,7 @@ class CartItemService extends BaseService
         $cartService = $this->container->get(CartService::class);
         $cart = $cartService->getCart();
         $productService = $this->container->get(ProductService::class);
-        $product=$productService->checkProduct($parameters['item'], $parameters['quantity']);
+        $product = $productService->checkProduct($parameters['item'], $parameters['quantity']);
 
         $cartItem = $this->getEntityManager()->getRepository(CartItem::class)->getCartItemByProductAndCart($cart, $product);
 
@@ -33,8 +31,12 @@ class CartItemService extends BaseService
             $cartItem->setProduct($product);
             $this->getEntityManager()->getRepository(CartItem::class)->add($cartItem);
         }
+        if ($cartItem->getQuantity() + $parameters['quantity'] > $product->getStock()) {
+            throw new NotFoundHttpException('There Is Not Enough Stock For This Product As You Wish!');
+        }
         $cartItem->setQuantity($cartItem->getQuantity() + $parameters['quantity']);
-        $this->getEntityManager()->getRepository(CartItem::class)->flush();
+        $this->getEntityManager()->persist($cartItem);
+        $this->getEntityManager()->flush();
 
         return $cartItem;
     }
@@ -63,8 +65,8 @@ class CartItemService extends BaseService
             throw new NotFoundHttpException('There Is Not Enough Stock For This Product As You Wish!');
         }
         $cartItem->setQuantity($parameters['quantity']);
-        $this->getEntityManager()->getRepository(CartItem::class)->flush();
-
+        $this->getEntityManager()->persist($cartItem);
+        $this->getEntityManager()->flush();
         return $cartItem;
     }
 

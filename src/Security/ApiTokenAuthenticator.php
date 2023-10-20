@@ -18,21 +18,17 @@ use Symfony\Component\Security\Http\Authenticator\Passport\SelfValidatingPasspor
 
 class ApiTokenAuthenticator extends AbstractAuthenticator
 {
-    private $userRepository;
 
     private $apiTokenRepository;
 
-    public function __construct(UserRepository $userRepository, ApiTokenRepository $apiTokenRepository)
+    public function __construct( ApiTokenRepository $apiTokenRepository)
     {
-        $this->userRepository = $userRepository;
         $this->apiTokenRepository = $apiTokenRepository;
     }
 
     public function supports(Request $request): ?bool
     {
-        if ($request->isMethod('POST') && $request->attributes->get('_route') == 'app_auth_login') {
-            return false;
-        }
+
         return $request->headers->has('X-AUTH-TOKEN');
     }
 

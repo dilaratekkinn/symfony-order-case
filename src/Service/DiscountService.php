@@ -16,14 +16,14 @@ class DiscountService extends BaseService
      */
     public function showDiscount(): ?array
     {
-        $discount=$this->getDiscount();
-            if (!is_null($discount)) {
-                return [
-                    'discountContent' => $discount['discountClass']->getContent(),
-                    'discountReason' => $discount['discountClass']->getDiscountReason(),
-                    'discountTotal' => $discount['discountTotal']
-                ];
-            }
+        $discount = $this->getDiscount();
+        if (!is_null($discount)) {
+            return [
+                'discountContent' => $discount['discountClass']->getContent(),
+                'discountReason' => $discount['discountClass']->getDiscountReason(),
+                'discountTotal' => $discount['discountTotal']
+            ];
+        }
         return null;
     }
 

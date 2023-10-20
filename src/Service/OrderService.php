@@ -36,7 +36,7 @@ class OrderService extends BaseService
         $order = new Order();
         $order->setUser($this->getUser());
         $order->setDiscountPrice($discount['discountTotal'] ?? 0);
-        $order->setDiscount( $discount['discountClass'] ?? null);
+        $order->setDiscount($discount['discountClass'] ?? null);
         $order->setStatus('wait');
         $order->setTotal($cartService->getTotal($cart));
         $this->getEntityManager()->getRepository(Order::class)->add($order);
@@ -45,7 +45,8 @@ class OrderService extends BaseService
         foreach ($cart->getCartItems() as $cartItem) {
             $orderItemService->addOrderItemToOrder($cartItem, $order);
         }
-        $this->getEntityManager()->getRepository(Order::class)->flush();
+        $this->getEntityManager()->persist($order);
+        $this->getEntityManager()->flush();
 
         $cartService->removeCart();
 
@@ -63,7 +64,7 @@ class OrderService extends BaseService
 
         return [
             'order' => $order,
-            'amount' => $orderTotalAmount
+            'amount' => $orderTotalAmount,
         ];
     }
 
@@ -71,14 +72,16 @@ class OrderService extends BaseService
      * @param int $id
      * @return void
      */
-    public function removeOrder(int $id) : void
+    public function removeOrder(int $id): void
     {
         $order = $this->checkOrder($id);
-        if($order->getStatus() != 'wait'){
+        if ($order->getStatus() != 'wait') {
             throw new NotFoundHttpException('You can cancel order while only waiting status!');
         }
         $order->setStatus('canceled');
-        $this->getEntityManager()->getRepository(Order::class)->flush();
+
+        $this->getEntityManager()->persist($order);
+        $this->getEntityManager()->flush();
     }
 
     /**

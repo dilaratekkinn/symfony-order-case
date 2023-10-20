@@ -23,7 +23,7 @@ class DiscountFactory
             throw new NotFoundHttpException('This ClassType is Not Okay With DiscountInterface');
         }
 
-        return new $className;
+        return $class;
     }
 
 }

@@ -54,6 +54,7 @@ class Order
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @JMS\Groups({"order"})
      */
     private $status;
 

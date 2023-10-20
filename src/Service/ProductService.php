@@ -15,14 +15,12 @@ class ProductService extends BaseService
      */
     public function checkProduct(int $id, float $quantity): ?Product
     {
-        $product=$this->getEntityManager()->getRepository(Product::class)->getProductByID($id);
+        $product = $this->getEntityManager()->getRepository(Product::class)->getProductByID($id);
         if ($product->getStock() < $quantity) {
             throw new NotFoundHttpException('There Is Not Enough Stock For This Product As You Wish!');
         }
         return $product;
     }
-
-
 
 
 }
