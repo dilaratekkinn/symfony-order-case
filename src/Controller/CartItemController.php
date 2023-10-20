@@ -28,7 +28,7 @@ class CartItemController extends BaseController
     public function delete(int $id): JsonResponse
     {
         $this->container->get(CartItemService::class)->removeItem($id);
-        return ApiResponse::remove('Item Removed From Cart with Product\'s Id ' . $id);
+        return ApiResponse::remove('Item Removed From Cart');
     }
 
     /**
@@ -37,7 +37,7 @@ class CartItemController extends BaseController
     public function update(Request $request, $id): JsonResponse
     {
         $this->container->get(CartItemService::class)->updateCartItemQuantity($request->toArray(), $id);
-        return ApiResponse::update('Cart Item Stock Quantity');
+        return ApiResponse::update('Cart Item Updated Quantity');
     }
 
     /**
